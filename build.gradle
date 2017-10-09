@@ -1,0 +1,30 @@
+plugins {
+    id "com.github.johnrengelman.shadow" version "2.0.1"
+}
+
+group 'io.saagie'
+version '1.0.0'
+
+apply plugin: 'scala'
+
+ext.mainClassName = ''
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile group: "org.slf4j", name: "slf4j-log4j12", version: "1.7.25"
+    compile group: "com.typesafe" , name: "config", version: "1.3.0"
+    compile group: "com.github.scopt" , name: "scopt_$scalaVersion" , version: "3.5.0"
+    compileOnly group:  "org.apache.spark" , name: "spark-core_$scalaVersion" , version: sparkVersion
+    compileOnly group:"org.apache.spark" , name: "spark-sql_$scalaVersion" , version: sparkVersion
+}
+
+shadowJar {
+    zip64 = true
+    classifier = ""
+    manifest {
+        attributes "Main-Class": mainClassName
+    }
+}
