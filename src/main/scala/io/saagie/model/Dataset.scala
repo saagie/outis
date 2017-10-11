@@ -105,14 +105,14 @@ case class RcFileHiveDataset(
                               table: String
                             ) extends HiveDataSet
 
-case class OrcDataset(
-                       columnsToAnonymise : List[String],
-                       storageFormat: FormatType,
-                       table: String
+case class OrcHiveDataset(
+                           columnsToAnonymise : List[String],
+                           storageFormat: FormatType,
+                           table: String
                      ) extends HiveDataSet
 
-case class SequenceFileDataset(
-                                columnsToAnonymise : List[String],
-                                storageFormat: FormatType,
-                                table: String
-                              ) extends HiveDataSet
+case class SequenceFileHiveDataset(
+                                    columnsToAnonymise : List[String],
+                                    storageFormat: FormatType,
+                                    table: String
+                                  ) extends HiveDataSet
