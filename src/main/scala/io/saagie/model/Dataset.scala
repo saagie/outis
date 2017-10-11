@@ -2,66 +2,117 @@ package io.saagie.model
 
 import io.saagie.model.FormatType.FormatType
 
+
 object FormatType extends Enumeration {
   type FormatType = Value
-  val TEXTFILE, CSV, JSON, PARQUET, RCFILE, ORC, SEQUENCEFILE  = Value
+  val TEXTFILE = Value("textfile")
+  val CSV = Value("csv")
+  val JSON = Value("json")
+  val PARQUET = Value("parquet")
+  val RCFILE = Value("rcfile")
+  val ORC = Value("orc")
+  val SEQUENCEFILE  = Value("sequencefile")
+  val AVRO = Value("avro")
 }
 
-sealed abstract case class Dataset(columnsToAnonymise : List[String],
-                                   storageFormat: FormatType,
-                                   hdfsUrl: Option[String] = None,
-                                   hiveTable: Option[String] = None) {
+sealed trait DataSet {
+  def columnsToAnonymise : List[String]
+  def storageFormat: FormatType
+}
 
-  require((hdfsUrl.nonEmpty &&  hiveTable.isEmpty) || (hdfsUrl.isEmpty && hiveTable.nonEmpty))
+sealed trait HdfsDataSet extends DataSet {
+  def columnsToAnonymise : List[String]
+  def storageFormat: FormatType
+  def hdfsUrl: String
+  def hdfsPath: String
+}
 
+case class CsvHdfsDataset(
+                           columnsToAnonymise : List[String],
+                           storageFormat: FormatType,
+                           hdfsUrl: String,
+                           hdfsPath: String,
+                           fieldDelimiter: String = "",
+                           quoteDelimiter: String = "\"\"",
+                           hasHeader : Boolean = true
+                         ) extends HdfsDataSet
+
+
+case class JsonHdfsDataset(
+                            columnsToAnonymise : List[String],
+                            storageFormat: FormatType,
+                            hdfsUrl: String,
+                            hdfsPath: String
+                          ) extends HdfsDataSet
+
+
+case class ParquetHdfsDataset(
+                               columnsToAnonymise : List[String], storageFormat: FormatType,
+                               hdfsUrl: String,
+                               hdfsPath: String,
+                               mergeSchema: Boolean = false
+                             ) extends HdfsDataSet
+
+case class OrcHdfsDataset(
+                           columnsToAnonymise : List[String],
+                           storageFormat: FormatType,
+                           hdfsUrl: String,
+                           hdfsPath: String
+                         ) extends HdfsDataSet
+
+case class AvroHdfsDataset(
+                            columnsToAnonymise : List[String],
+                            storageFormat: FormatType,
+                            hdfsUrl: String,
+                            hdfsPath: String
+                          ) extends HdfsDataSet
+
+
+sealed trait HiveDataSet extends DataSet {
+  def columnsToAnonymise : List[String]
+  def storageFormat: FormatType
+  def table: String
 }
 
 
-case class TextFileDataset(override val columnsToAnonymise : List[String],
-                           override val hdfsUrl: Option[String] = None,
-                           override val hiveTable: Option[String] = None,
-                           lineDelimiter: String = "\n",
-                          ) extends Dataset(columnsToAnonymise, FormatType.TEXTFILE, hdfsUrl, hiveTable)
+case class ParquetHiveDataset(
+                               columnsToAnonymise : List[String], storageFormat: FormatType,
+                               table: String,
+                               mergeSchema: Boolean = false
+                             ) extends HiveDataSet
 
-case class CsvDataset(override val columnsToAnonymise : List[String],
-                      override val hdfsUrl: Option[String] = None,
-                      override val hiveTable: Option[String] = None,
-                     fieldDelimiter: String = "",
-                      stringDelimiter: String = "\"\""
-                     ) extends Dataset(columnsToAnonymise, FormatType.CSV, hdfsUrl, hiveTable) {
-  require(hiveTable.isEmpty && hdfsUrl.nonEmpty)
-}
-
-
-case class JsonDataset(override val columnsToAnonymise : List[String],
-                      override val storageFormat: FormatType,
-                      override val hdfsUrl: Option[String] = None,
-                      override val hiveTable: Option[String] = None
-                     ) extends Dataset(columnsToAnonymise, FormatType.JSON, hdfsUrl, hiveTable) {
-  require(hiveTable.isEmpty && hdfsUrl.nonEmpty)
-}
-
-case class ParquetDataset(override val columnsToAnonymise : List[String],
-                       override val storageFormat: FormatType,
-                       override val hdfsUrl: Option[String] = None,
-                       override val hiveTable: Option[String] = None
-                      ) extends Dataset(columnsToAnonymise, FormatType.PARQUET, hdfsUrl, hiveTable)
+case class TextFileHiveDataset(
+                                columnsToAnonymise : List[String], storageFormat: FormatType,
+                                table: String,
+                                lineDelimiter: String = "\n",
+                                fieldDelimiter: String = "",
+                                quoteDelimiter: String = "\"\"",
+                                hasHeader : Boolean = true
+                          ) extends HiveDataSet
 
 
-case class RCFileDataset(override val columnsToAnonymise : List[String],
-                          override val storageFormat: FormatType,
-                          override val hdfsUrl: Option[String] = None,
-                          override val hiveTable: Option[String] = None
-                         ) extends Dataset(columnsToAnonymise, FormatType.RCFILE, hdfsUrl, hiveTable)
+case class AvroHiveDataset(
+                            columnsToAnonymise : List[String],
+                            storageFormat: FormatType,
+                            table: String
+                          ) extends HiveDataSet
 
-case class OrcDataset(override val columnsToAnonymise : List[String],
-                      override val storageFormat: FormatType,
-                      override val hdfsUrl: Option[String] = None,
-                      override val hiveTable: Option[String] = None
-                     ) extends Dataset(columnsToAnonymise, FormatType.ORC, hdfsUrl, hiveTable)
 
-case class SequenceFileDataset(override val columnsToAnonymise : List[String],
-                      override val storageFormat: FormatType,
-                      override val hdfsUrl: Option[String] = None,
-                      override val hiveTable: Option[String] = None
-                     ) extends Dataset(columnsToAnonymise, FormatType.SEQUENCEFILE, hdfsUrl, hiveTable)
+
+case class RcFileHiveDataset(
+                              columnsToAnonymise : List[String],
+                              storageFormat: FormatType,
+                              table: String
+                            ) extends HiveDataSet
+
+case class OrcDataset(
+                       columnsToAnonymise : List[String],
+                       storageFormat: FormatType,
+                       table: String
+                     ) extends HiveDataSet
+
+case class SequenceFileDataset(
+                                columnsToAnonymise : List[String],
+                                storageFormat: FormatType,
+                                table: String
+                              ) extends HiveDataSet
