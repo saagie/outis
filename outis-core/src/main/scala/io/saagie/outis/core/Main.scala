@@ -1,4 +1,4 @@
-package io.saagie
+package io.saagie.outis.core
 
 import io.saagie.job.Anonymize
 import io.saagie.model._

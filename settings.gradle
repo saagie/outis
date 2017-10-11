@@ -1,0 +1,3 @@
+rootProject.name = 'outis'
+include 'outis-core'
+include 'outis-link'
