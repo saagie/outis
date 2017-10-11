@@ -25,9 +25,9 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
    val df: DataFrame =  dataset match {
       case d: CsvHdfsDataset => spark.read.option("delimiter", d.fieldDelimiter).option("quote", d.quoteDelimiter).option("header", d.hasHeader).csv(path)
       case d: ParquetHdfsDataset => spark.read.option("mergeSchema", d.mergeSchema).parquet(path)
-      case d: OrcHdfsDataset => spark.read.orc(path)
-      case d: JsonHdfsDataset => spark.read.json(path)
-      case d: AvroHdfsDataset => spark.read.avro(path)
+      case _: OrcHdfsDataset => spark.read.orc(path)
+      case _: JsonHdfsDataset => spark.read.json(path)
+      case _: AvroHdfsDataset => spark.read.avro(path)
       case _ => throw new Exception("Format not supported for HdfsDataSet.")
     }
 
@@ -35,7 +35,7 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
 
     val tmpPath = dataset.hdfsUrl + "-tmp"
 
-    df.select(columnsNonAnonymised.map(c => col(c)).union(dataset.columnsToAnonymise.map(c => col(c))): _*)
+    df.select(columnsNonAnonymised.map(c => col(c).alias(c)).union(dataset.columnsToAnonymise.map(c => col(c).alias(c))): _*)
       .write.format(dataset.storageFormat.toString).save(tmpPath)
 
     HdfsUtils(dataset.hdfsUrl).deleteFiles(List(new Path(dataset.hdfsUrl)))
@@ -52,7 +52,7 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
     val df: DataFrame = spark.sql(s"SELECT * FROM $table")
 
     val columnsNonAnonymised = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
-    df.select(columnsNonAnonymised.map(c => col(c)).union(dataset.columnsToAnonymise.map(c => col(c))): _*)
+    df.select(columnsNonAnonymised.map(c => col(c).alias(c)).union(dataset.columnsToAnonymise.map(c => col(c).alias(c))): _*)
 
     df.createOrReplaceTempView(sparkTmpTable)
 
