@@ -24,7 +24,9 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
 
    val df: DataFrame =  dataset match {
       case d: CsvHdfsDataset => spark.read.option("delimiter", d.fieldDelimiter).option("quote", d.quoteDelimiter).option("header", d.hasHeader).csv(path)
-      case d: ParquetHdfsDataset => spark.read.option("mergeSchema", d.mergeSchema).parquet(path)
+      case d: ParquetHdfsDataset =>
+        spark.sql(s"SET spark.sql.parquet.compression.codec = ${d.compressionCodec.toString}")
+        spark.read.option("mergeSchema", d.mergeSchema).parquet(path)
       case _: OrcHdfsDataset => spark.read.orc(path)
       case _: JsonHdfsDataset => spark.read.json(path)
       case _: AvroHdfsDataset => spark.read.avro(path)
@@ -56,7 +58,12 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
 
     df.createOrReplaceTempView(sparkTmpTable)
 
-    val createTmpTable  = s"CREATE TABLE $tmpTable AS SELECT * FROM  $sparkTmpTable USING hive OPTIONS(fileFormat '${dataset.storageFormat.toString}')"
+    val options : String = dataset match {
+      case d: TextFileHiveDataset =>  s"OPTIONS(fileFormat '${dataset.storageFormat.toString}', fieldDelim '${d.fieldDelimiter}', escapeDelim '${d.escapeDelimiter}', collectionDelim '${d.collectionDelimiter}', mapkeyDelim '${d.mapKeyDelimiter}', lineDelim '${d.lineDelimiter}')"
+      case _ => s"OPTIONS(fileFormat '${dataset.storageFormat.toString}')"
+    }
+
+    val createTmpTable  = s"CREATE TABLE $tmpTable AS SELECT * FROM  $sparkTmpTable USING hive $options"
     spark.sql(createTmpTable)
 
     val dropTable = s"DROP TABLE $table"
