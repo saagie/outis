@@ -34,6 +34,8 @@ project(':outis-core') {
 
         compileOnly group: "org.apache.spark", name: "spark-core_$scalaMajor", version: sparkVersion
         compileOnly group: "org.apache.spark", name: "spark-sql_$scalaMajor", version: sparkVersion
+
+        testCompile group: "org.scalatest", name: "scalatest_$scalaMajor", version: "3.0.4"
     }
 
     shadowJar {
