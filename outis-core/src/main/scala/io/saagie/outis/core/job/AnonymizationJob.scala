@@ -12,17 +12,17 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
 
   def anonymise(): Unit = {
 
-     dataset  match {
-       case d: HiveDataSet => anonymiseFromHive(d)
-       case d: HdfsDataSet => anonymizeFromHdfs(d)
-     }
+    dataset match {
+      case d: HiveDataSet => anonymiseFromHive(d)
+      case d: HdfsDataSet => anonymizeFromHdfs(d)
+    }
   }
 
-  private def anonymizeFromHdfs[T<:HdfsDataSet](dataset: T): Unit = {
+  private def anonymizeFromHdfs[T <: HdfsDataSet](dataset: T): Unit = {
 
     val path = Path.mergePaths(new Path(dataset.hdfsUrl), new Path(dataset.hdfsPath)).toString
 
-   val df: DataFrame =  dataset match {
+    val df: DataFrame = dataset match {
       case d: CsvHdfsDataset => spark.read.option("delimiter", d.fieldDelimiter).option("quote", d.quoteDelimiter).option("header", d.hasHeader).csv(path)
       case d: ParquetHdfsDataset =>
         spark.sql(s"SET spark.sql.parquet.compression.codec = ${d.compressionCodec.toString}")
@@ -45,7 +45,7 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
 
   }
 
-  private def anonymiseFromHive[T<:HiveDataSet](dataset: T) = {
+  private def anonymiseFromHive[T <: HiveDataSet](dataset: T) = {
 
     val table = dataset.table
     val tmpTable = table + "-tmp"
@@ -58,12 +58,12 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
 
     df.createOrReplaceTempView(sparkTmpTable)
 
-    val options : String = dataset match {
-      case d: TextFileHiveDataset =>  s"OPTIONS(fileFormat '${dataset.storageFormat.toString}', fieldDelim '${d.fieldDelimiter}', escapeDelim '${d.escapeDelimiter}', collectionDelim '${d.collectionDelimiter}', mapkeyDelim '${d.mapKeyDelimiter}', lineDelim '${d.lineDelimiter}')"
+    val options: String = dataset match {
+      case d: TextFileHiveDataset => s"OPTIONS(fileFormat '${dataset.storageFormat.toString}', fieldDelim '${d.fieldDelimiter}', escapeDelim '${d.escapeDelimiter}', collectionDelim '${d.collectionDelimiter}', mapkeyDelim '${d.mapKeyDelimiter}', lineDelim '${d.lineDelimiter}')"
       case _ => s"OPTIONS(fileFormat '${dataset.storageFormat.toString}')"
     }
 
-    val createTmpTable  = s"CREATE TABLE $tmpTable AS SELECT * FROM  $sparkTmpTable USING hive $options"
+    val createTmpTable = s"CREATE TABLE $tmpTable AS SELECT * FROM  $sparkTmpTable USING hive $options"
     spark.sql(createTmpTable)
 
     val dropTable = s"DROP TABLE $table"
