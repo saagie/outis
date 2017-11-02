@@ -4,8 +4,8 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class AnonymizeTest extends FlatSpec with Matchers {
 
-  "suppression" should "return null value" in {
-    Anonymize.suppression() shouldBe null
+  "suppression" should "return option none value" in {
+    Anonymize.suppression() shouldBe None
   }
 
   "setTo with a char pattern to field" should "return an value with same size and only the char" in {
