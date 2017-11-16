@@ -100,11 +100,11 @@ case class ParquetHiveDataset(
 case class TextFileHiveDataset(
                                 columnsToAnonymise: List[String], storageFormat: FormatType,
                                 table: String,
-                                fieldDelimiter: String = "\001",
+                                fieldDelimiter: String = "\u0001",
                                 escapeDelimiter: String = "\"\"",
                                 lineDelimiter: String = "\n",
-                                collectionDelimiter: String = "\002",
-                                mapKeyDelimiter: String = "\003",
+                                collectionDelimiter: String = "\u0002",
+                                mapKeyDelimiter: String = "\u0003",
                                 serdeClass: String
                               ) extends HiveDataSet
 

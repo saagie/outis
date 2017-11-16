@@ -1,0 +1,27 @@
+products:
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/test/io/saagie/outis/core/anonymize/AnonymizeTest$$anonfun$1.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/test/io/saagie/outis/core/anonymize/AnonymizeTest$$anonfun$2.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/test/io/saagie/outis/core/anonymize/AnonymizeTest$$anonfun$3.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/test/io/saagie/outis/core/anonymize/AnonymizeTest$$anonfun$4.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/test/io/saagie/outis/core/anonymize/AnonymizeTest$$anonfun$5.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/test/io/saagie/outis/core/anonymize/AnonymizeTest$$anonfun$6.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/test/io/saagie/outis/core/anonymize/AnonymizeTest$$anonfun$7.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/test/io/saagie/outis/core/anonymize/AnonymizeTest.class
+binary dependencies:
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> /home/ekoffi/.gradle/caches/modules-2/files-2.1/org.scala-lang/scala-library/2.11.11/e283d2b7fde6504f6a86458b1f6af465353907cc/scala-library-2.11.11.jar
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> /home/ekoffi/.gradle/caches/modules-2/files-2.1/org.scalactic/scalactic_2.11/3.0.4/a97b52d531f6010b424813af260ac6ce748e187e/scalactic_2.11-3.0.4.jar
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> /home/ekoffi/.gradle/caches/modules-2/files-2.1/org.scalatest/scalatest_2.11/3.0.4/a0df09cc87bb681674b05a883462b121866784e5/scalatest_2.11-3.0.4.jar
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/main/io/saagie/outis/core/anonymize/AnonymizationException.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> build/classes/scala/main/io/saagie/outis/core/anonymize/Anonymize$.class
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> /usr/java/jdk1.8.0_131/jre/lib/rt.jar
+source dependencies:
+external dependencies:
+class names:
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> io.saagie.outis.core.anonymize.AnonymizeTest
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> io.saagie.outis.core.anonymize.AnonymizeTest$$anonfun$1
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> io.saagie.outis.core.anonymize.AnonymizeTest$$anonfun$2
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> io.saagie.outis.core.anonymize.AnonymizeTest$$anonfun$3
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> io.saagie.outis.core.anonymize.AnonymizeTest$$anonfun$4
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> io.saagie.outis.core.anonymize.AnonymizeTest$$anonfun$5
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> io.saagie.outis.core.anonymize.AnonymizeTest$$anonfun$6
+   src/test/scala/io/saagie/outis/core/anonymize/AnonymizeTest.scala -> io.saagie.outis.core.anonymize.AnonymizeTest$$anonfun$7

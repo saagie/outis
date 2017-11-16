@@ -2,12 +2,10 @@ plugins {
     id "com.github.johnrengelman.shadow" version "2.0.1"
 }
 
-group 'io.io.saagie'
+group 'io.saagie'
 version '1.0.0'
 
-apply plugin: 'scala'
-
-allprojects {
+subprojects {
     apply plugin: 'scala'
 
     repositories {
@@ -15,15 +13,8 @@ allprojects {
     }
 }
 
-repositories {
-    jcenter()
-}
-
-dependencies {
-    compile group: 'org.scala-lang', name: 'scala-library', version: "$scalaMajor.$scalaMinor"
-}
-
 project(':outis-core') {
+    apply plugin: 'com.github.johnrengelman.shadow'
     ext.mainClassName = ''
 
     dependencies {
@@ -50,6 +41,12 @@ project(':outis-core') {
 project(':outis-link') {
     dependencies {
         compile project(':outis-core')
+
         compile group: 'org.scala-lang', name: 'scala-library', version: "$scalaMajor.$scalaMinor"
+        compile group: 'com.squareup.okhttp3', name: 'okhttp', version: okHttpVersion
+        compile group: 'org.json4s', name: "json4s-native_$scalaMajor", version: json4sVersion
+
+        compileOnly group: "org.apache.spark", name: "spark-core_$scalaMajor", version: sparkVersion
+        compileOnly group: "org.apache.spark", name: "spark-sql_$scalaMajor", version: sparkVersion
     }
 }

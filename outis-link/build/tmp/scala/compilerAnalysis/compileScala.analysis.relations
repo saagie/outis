@@ -1,0 +1,21 @@
+products:
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> /home/ekoffi/IdeaProjects/outis/outis-link/build/classes/scala/main/io/saagie/outis/link/DatagovClient$.class
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> /home/ekoffi/IdeaProjects/outis/outis-link/build/classes/scala/main/io/saagie/outis/link/DatagovClient$delayedInit$body.class
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> /home/ekoffi/IdeaProjects/outis/outis-link/build/classes/scala/main/io/saagie/outis/link/DatagovClient.class
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> /home/ekoffi/IdeaProjects/outis/outis-link/build/classes/scala/main/io/saagie/outis/link/DatagovClientParameters$.class
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> /home/ekoffi/IdeaProjects/outis/outis-link/build/classes/scala/main/io/saagie/outis/link/DatagovClientParameters.class
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovJob.scala -> /home/ekoffi/IdeaProjects/outis/outis-link/build/classes/scala/main/io/saagie/outis/link/DatagovJob.class
+binary dependencies:
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> /home/ekoffi/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp3/okhttp/3.9.0/1b6c10b5120995a7542c1a31b7828fb8593c8ba/okhttp-3.9.0.jar
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> /home/ekoffi/.gradle/caches/modules-2/files-2.1/org.scala-lang/scala-library/2.11.11/e283d2b7fde6504f6a86458b1f6af465353907cc/scala-library-2.11.11.jar
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> /usr/java/jdk1.8.0_131/jre/lib/rt.jar
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovJob.scala -> /usr/java/jdk1.8.0_131/jre/lib/rt.jar
+source dependencies:
+external dependencies:
+class names:
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> io.saagie.outis.link.DatagovClient
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> io.saagie.outis.link.DatagovClient$
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> io.saagie.outis.link.DatagovClient$delayedInit$body
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> io.saagie.outis.link.DatagovClientParameters
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovClient.scala -> io.saagie.outis.link.DatagovClientParameters$
+   /home/ekoffi/IdeaProjects/outis/outis-link/src/main/scala/io/saagie/outis/link/DatagovJob.scala -> io.saagie.outis.link.DatagovJob

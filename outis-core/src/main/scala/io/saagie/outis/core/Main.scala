@@ -2,10 +2,12 @@ package io.saagie.outis.core
 
 import io.saagie.job.Anonymize
 import io.saagie.model._
+import io.saagie.outis.core.model.OutisLink
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.slf4j.{Logger, LoggerFactory}
 import scopt.OptionParser
+
 case class CLIParams(datagovUrl: String = "", hiveMetastoreUri: String = "thrift://nn1:9083", hadoopUserName: String = "hdfs")
 
 object Args {
@@ -39,36 +41,14 @@ object Args {
 
 }
 
-case class SparkProgram()(implicit sparkSession: SparkSession) {
+case class SparkProgram(outisLink: OutisLink)(implicit sparkSession: SparkSession) {
 
   def launchAnonymisation(): Unit = {
-
-    //TODO get datasets to anonymise from datagov (or another source)
-    val datasets : List[DataSet] = List()
+    val datasets: List[DataSet] = outisLink.datasetsToAnonimyze()
 
     datasets.foreach(dataset => {
       Anonymize(dataset).anonymise()
       // TODO call datagov
     })
   }
-}
-
-object Main extends App {
-
-  val appName: String = "outis"
-  lazy val logger: Logger = LoggerFactory.getLogger(this.getClass)
-
-  val parser = Args.parseArgs(appName)
-   parser.parse(args, CLIParams()) match {
-    case Some(p) =>
-      System.setProperty("HADOOP_USER_NAME", p.hadoopUserName)
-      System.setProperty("HIVE_METASTORE_URIS", p.hiveMetastoreUri)
-      val conf = new SparkConf().setAppName(appName)
-      implicit val spark: SparkSession = SparkSession.builder.config(conf).enableHiveSupport().getOrCreate()
-      SparkProgram().launchAnonymisation()
-      spark.stop()
-
-    case None => logger.debug("invalid program arguments : {}", args)
-  }
-
 }
