@@ -2,6 +2,7 @@ package io.saagie.job
 
 import com.databricks.spark.avro._
 import io.saagie.model._
+import io.saagie.outis.core.anonymize.AnonymizeString
 import io.saagie.util.HdfsUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -51,8 +52,10 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
 
     val df: DataFrame = spark.sql(s"SELECT * FROM $table")
 
-    val columnsNonAnonymised = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
-    df.select(columnsNonAnonymised.map(c => col(c).alias(c)).union(dataset.columnsToAnonymise.map(c => col(c).alias(c))): _*)
+    val anonymize = spark.sqlContext.udf.register("anonymize", s => AnonymizeString.setToX(s))
+
+    val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
+    df.select(columnsNonAnonymized.map(c => col(c).alias(c)).union(dataset.columnsToAnonymise.map(c => anonymize(col(c).alias(c)))): _*)
 
     df.createOrReplaceTempView(sparkTmpTable)
 

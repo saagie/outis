@@ -3,7 +3,7 @@ package io.saagie.outis.core.anonymize
 import scala.collection.immutable
 import scala.util.Random
 
-object Anonymize {
+object AnonymizeString {
 
   val letters: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z')
 
