@@ -7,24 +7,26 @@ import io.saagie.model.ParquetCompressionCodec.ParquetCompressionCodec
 object FormatType extends Enumeration {
   type FormatType = Value
   val TEXTFILE: Value = Value("textfile")
-  val CSV = Value("csv")
-  val JSON = Value("json")
-  val PARQUET = Value("parquet")
-  val RCFILE = Value("rcfile")
-  val ORC = Value("orc")
-  val SEQUENCEFILE = Value("sequencefile")
-  val AVRO = Value("avro")
+  val CSV: Value = Value("csv")
+  val JSON: Value = Value("json")
+  val PARQUET: Value = Value("parquet")
+  val RCFILE: Value = Value("rcfile")
+  val ORC: Value = Value("orc")
+  val SEQUENCEFILE: Value = Value("sequencefile")
+  val AVRO: Value = Value("avro")
 }
 
 object ParquetCompressionCodec extends Enumeration {
   type ParquetCompressionCodec = Value
-  val UNCOMPRESSED = Value("uncompressed")
-  val SNAPPY = Value("snappy")
-  val GZIP = Value("gzip")
-  val LZO = Value("lzo")
+  val UNCOMPRESSED: Value = Value("uncompressed")
+  val SNAPPY: Value = Value("snappy")
+  val GZIP: Value = Value("gzip")
+  val LZO: Value = Value("lzo")
 }
 
 sealed trait DataSet {
+  def identifier: Any
+
   def columnsToAnonymise: List[String]
 
   def storageFormat: FormatType
@@ -41,6 +43,7 @@ sealed trait HdfsDataSet extends DataSet {
 }
 
 case class CsvHdfsDataset(
+                           identifier: Any,
                            columnsToAnonymise: List[String],
                            storageFormat: FormatType,
                            hdfsUrl: String,
@@ -52,6 +55,7 @@ case class CsvHdfsDataset(
 
 
 case class JsonHdfsDataset(
+                            identifier: Any,
                             columnsToAnonymise: List[String],
                             storageFormat: FormatType,
                             hdfsUrl: String,
@@ -60,6 +64,7 @@ case class JsonHdfsDataset(
 
 
 case class ParquetHdfsDataset(
+                               identifier: Any,
                                columnsToAnonymise: List[String], storageFormat: FormatType,
                                hdfsUrl: String,
                                hdfsPath: String,
@@ -68,6 +73,7 @@ case class ParquetHdfsDataset(
                              ) extends HdfsDataSet
 
 case class OrcHdfsDataset(
+                           identifier: Any,
                            columnsToAnonymise: List[String],
                            storageFormat: FormatType,
                            hdfsUrl: String,
@@ -75,6 +81,7 @@ case class OrcHdfsDataset(
                          ) extends HdfsDataSet
 
 case class AvroHdfsDataset(
+                            identifier: Any,
                             columnsToAnonymise: List[String],
                             storageFormat: FormatType,
                             hdfsUrl: String,
@@ -92,12 +99,14 @@ sealed trait HiveDataSet extends DataSet {
 
 
 case class ParquetHiveDataset(
+                               identifier: Any,
                                columnsToAnonymise: List[String], storageFormat: FormatType,
                                table: String,
                                mergeSchema: Boolean = false
                              ) extends HiveDataSet
 
 case class TextFileHiveDataset(
+                                identifier: Any,
                                 columnsToAnonymise: List[String], storageFormat: FormatType,
                                 table: String,
                                 fieldDelimiter: String = "\u0001",
@@ -110,6 +119,7 @@ case class TextFileHiveDataset(
 
 
 case class AvroHiveDataset(
+                            identifier: Any,
                             columnsToAnonymise: List[String],
                             storageFormat: FormatType,
                             table: String
@@ -117,6 +127,7 @@ case class AvroHiveDataset(
 
 
 case class RcFileHiveDataset(
+                              identifier: Any,
                               columnsToAnonymise: List[String],
                               storageFormat: FormatType,
                               table: String,
@@ -124,12 +135,14 @@ case class RcFileHiveDataset(
                             ) extends HiveDataSet
 
 case class OrcHiveDataset(
+                           identifier: Any,
                            columnsToAnonymise: List[String],
                            storageFormat: FormatType,
                            table: String
                          ) extends HiveDataSet
 
 case class SequenceFileHiveDataset(
+                                    identifier: Any,
                                     columnsToAnonymise: List[String],
                                     storageFormat: FormatType,
                                     table: String,

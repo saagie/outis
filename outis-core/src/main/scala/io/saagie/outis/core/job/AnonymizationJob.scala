@@ -41,8 +41,6 @@ case class Anonymize(dataset: DataSet)(implicit spark: SparkSession) {
       .write.format(dataset.storageFormat.toString).save(tmpPath)
 
     HdfsUtils(dataset.hdfsUrl).deleteFiles(List(new Path(dataset.hdfsUrl)))
-
-
   }
 
   private def anonymiseFromHive[T <: HiveDataSet](dataset: T) = {
