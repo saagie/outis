@@ -1,6 +1,6 @@
 package io.saagie.outis.core
 
-import io.saagie.job.Anonymize
+import io.saagie.outis.core.job.AnonymizationJob
 import io.saagie.outis.core.model.OutisLink
 import org.apache.spark.sql.SparkSession
 import scopt.OptionParser
@@ -39,12 +39,11 @@ object Args {
 }
 
 case class SparkProgram(outisLink: OutisLink)(implicit sparkSession: SparkSession) {
-
   def launchAnonymisation(): Unit = {
     outisLink.datasetsToAnonimyze() match {
       case Right(datasets) =>
         datasets.foreach(dataset => {
-          Anonymize(dataset).anonymise()
+          AnonymizationJob(dataset).anonymize()
           outisLink.notifyDatasetProcessed(dataset)
         })
       case Left(error) =>
