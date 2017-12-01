@@ -4,8 +4,8 @@ import java.lang.reflect.Method
 
 import com.databricks.spark.avro._
 import io.saagie.model._
-import io.saagie.outis.core.anonymize.AnonymizationException
-import io.saagie.util.HdfsUtils
+import io.saagie.outis.core.anonymize.{AnonymizationException, AnonymizeString}
+import io.saagie.outis.core.util.HdfsUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{DataFrame, SparkSession}
@@ -64,23 +64,29 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
   private def anonymiseFromHive[T <: HiveDataSet](dataset: T) = {
 
     val table = dataset.table
-    val tmpTable = table + "-tmp"
-    val sparkTmpTable = "spark-" + tmpTable
+    val tmpTable = table.split('.')(1) + "_tmp"
+    val sparkTmpTable = "spark_" + tmpTable
 
     val df: DataFrame = spark.sql(s"SELECT * FROM $table")
 
-    val anonymizeString = getStringAnonymization.right.map(method => spark.sqlContext.udf.register("anonymizeString",
-      s =>
-        method.invoke(null, outisConf.getParameters(OutisConf.ANONYMIZER_STRING).map {
-          case ColumnValue => s
-          case x => x
-        }: _*)
-    ))
+    df.show()
+
+    //TODO: Make this serializable
+    /*    val anonymizeString = getStringAnonymization.right.map(method => spark.sqlContext.udf.register("anonymizeString",
+          (s: String) =>
+            method.invoke(null, outisConf.getParameters(OutisConf.ANONYMIZER_STRING).map({
+              case ColumnValue => s
+              case x => x
+            }).asInstanceOf[Seq[Object]]: _*).asInstanceOf[String]
+        ))*/
+
+    val anonymizeString = Right(spark.sqlContext.udf.register("anonymizeString", (s: String) => AnonymizeString.substitute(s)))
 
     if (anonymizeString.isRight) {
+      df.show()
       val stringAnonimyzer = anonymizeString.right.get
       val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
-      df.select(
+      val anodf = df.select(
         columnsNonAnonymized.map(c => col(c).alias(c))
           .union(dataset.columnsToAnonymise
             .map(c => {
@@ -90,19 +96,22 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
               }
             })
           ): _*)
-
-      df.createOrReplaceTempView(sparkTmpTable)
+      anodf.show()
+      anodf.createOrReplaceTempView(sparkTmpTable)
 
       val options: String = dataset match {
-        case d: TextFileHiveDataset => s"OPTIONS(fileFormat '${dataset.storageFormat.toString}', fieldDelim '${d.fieldDelimiter}', escapeDelim '${d.escapeDelimiter}', collectionDelim '${d.collectionDelimiter}', mapkeyDelim '${d.mapKeyDelimiter}', lineDelim '${d.lineDelimiter}')"
+        //        case d: TextFileHiveDataset => s"OPTIONS(fileFormat '${dataset.storageFormat.toString}', fieldDelim '${d.fieldDelimiter}', escapeDelim '${d.escapeDelimiter}', collectionDelim '${d.collectionDelimiter}', mapkeyDelim '${d.mapKeyDelimiter}', lineDelim '${d.lineDelimiter}')"
+        case d: TextFileHiveDataset => s"ROW FORMAT DELIMITED FIELDS TERMINATED BY '${d.fieldDelimiter}' ESCAPED BY '${d.escapeDelimiter}' LINES TERMINATED BY '${d.lineDelimiter}' STORED AS ${dataset.storageFormat.toString}"
         case _ => s"OPTIONS(fileFormat '${dataset.storageFormat.toString}')"
       }
 
-      val createTmpTable = s"CREATE TABLE $tmpTable AS SELECT * FROM  $sparkTmpTable USING hive $options"
+      val createTmpTable = s"CREATE TABLE $tmpTable $options AS SELECT * FROM  $sparkTmpTable"
       spark.sql(createTmpTable)
 
       val dropTable = s"DROP TABLE $table"
-      spark.sql(dropTable)
+//      spark.sql(dropTable)
+    } else {
+      //      anonymizeString.left.get.printStackTrace()
     }
   }
 }

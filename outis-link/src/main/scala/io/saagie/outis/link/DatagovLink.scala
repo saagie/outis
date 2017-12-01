@@ -7,25 +7,52 @@ import org.json4s.NoTypeHints
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read, write}
 
-case class Dataset(id: String,
-                   name: String,
-                   `type`: String,
-                   columnsToAnonymize: Option[List[String]],
-                   storageFormat: Option[String],
-                   fieldDelimiter: Option[String],
-                   escapeDelimiter: Option[String],
-                   lineDelimiter: Option[String],
-                   collectionDelimiter: Option[String],
-                   mapKeyDelimiter: Option[String],
-                   serdeClass: Option[String]
+/**
+  * Datagov's dataset description.
+  *
+  * @param id
+  * @param name
+  * @param `type`
+  * @param columnsToAnonymize
+  * @param storageFormat
+  * @param fieldDelimiter
+  * @param escapeDelimiter
+  * @param lineDelimiter
+  * @param collectionDelimiter
+  * @param mapKeyDelimiter
+  * @param serdeClass
+  */
+case class DatagovDataset(id: String,
+                          name: String,
+                          `type`: String,
+                          columnsToAnonymize: Option[List[String]],
+                          storageFormat: Option[String],
+                          fieldDelimiter: Option[String],
+                          escapeDelimiter: Option[String],
+                          lineDelimiter: Option[String],
+                          collectionDelimiter: Option[String],
+                          mapKeyDelimiter: Option[String],
+                          serdeClass: Option[String]
                   )
 
-case class DatagovNotification(id: String, time: Long, rowsAnonymized: Int)
+/**
+  * Datagov's callback response.
+  *
+  * @param datasetId
+  * @param timestamp
+  * @param rowsAnonymized
+  * @param duration
+  * @param rowsInError
+  */
+case class DatagovNotification(datasetId: String, timestamp: Long, rowsAnonymized: Int, duration: Long = 0, rowsInError: Int = 0)
 
 case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) extends OutisLink {
 
   import DatagovLink.JSON_MEDIA_TYPE
 
+  /**
+    * @inheritdoc
+    */
   override def datasetsToAnonimyze(): Either[OutisLinkException, List[DataSet]] = {
     val okHttpClient = new OkHttpClient.Builder()
       .build()
@@ -40,18 +67,20 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
       .execute()
 
     implicit val formats = Serialization.formats(NoTypeHints)
+
     if (response.isSuccessful) {
-      val datasets = read[List[Dataset]](response.body().string())
+      val body = response.body().string()
+      val datasets = read[List[DatagovDataset]](body)
         .filter { ds => ds.columnsToAnonymize.nonEmpty && ds.columnsToAnonymize.get.nonEmpty }
         .map { ds =>
           ds.`type` match {
             case "TABLE" =>
               ds.storageFormat match {
-                case Some("CSV") =>
+                case Some("TEXT_FILE") =>
                   TextFileHiveDataset(
                     ds.id,
                     ds.columnsToAnonymize.getOrElse(List()),
-                    FormatType.CSV,
+                    FormatType.TEXTFILE,
                     ds.name,
                     ds.fieldDelimiter.getOrElse("\u0001"),
                     ds.escapeDelimiter.getOrElse("\u0001"),
@@ -76,12 +105,16 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
           _ != ((): Unit)
         }
         .asInstanceOf[List[DataSet]]
+      println(s"Datasets---------------------------------------$datasets")
       Right(datasets)
     } else {
       Left(OutisLinkException(s"Error while retrieving datasets to anonymize: ${response.code()}, ${response.message()}"))
     }
   }
 
+  /**
+    * @inheritdoc
+    */
   override def notifyDatasetProcessed(dataSet: DataSet): Either[OutisLinkException, String] = {
     val okHttpClient = new OkHttpClient.Builder()
       .build()

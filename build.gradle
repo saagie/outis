@@ -1,12 +1,15 @@
 plugins {
     id "com.github.johnrengelman.shadow" version "2.0.1"
+    id 'org.sonarqube' version '2.5'
+    id "io.saagie.gradle-saagie-plugin" version "2.0.5"
 }
 
 group 'io.saagie'
-version '1.0.0'
+version outisVersion
 
 subprojects {
     apply plugin: 'scala'
+    apply plugin: 'jacoco'
 
     repositories {
         jcenter()
@@ -14,9 +17,6 @@ subprojects {
 }
 
 project(':outis-core') {
-    apply plugin: 'com.github.johnrengelman.shadow'
-    ext.mainClassName = ''
-
     dependencies {
         compile group: "org.slf4j", name: "slf4j-log4j12", version: "1.7.25"
         compile group: "com.typesafe", name: "config", version: "1.3.0"
@@ -28,17 +28,14 @@ project(':outis-core') {
 
         testCompile group: "org.scalatest", name: "scalatest_$scalaMajor", version: "3.0.4"
     }
-
-    shadowJar {
-        zip64 = true
-        classifier = ""
-        manifest {
-            attributes "Main-Class": mainClassName
-        }
-    }
 }
 
 project(':outis-link') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'io.saagie.gradle-saagie-plugin'
+
+    ext.mainClassName = 'io.saagie.outis.link.DatagovClient'
+
     dependencies {
         compile project(':outis-core')
 
@@ -48,5 +45,13 @@ project(':outis-link') {
 
         compileOnly group: "org.apache.spark", name: "spark-core_$scalaMajor", version: sparkVersion
         compileOnly group: "org.apache.spark", name: "spark-sql_$scalaMajor", version: sparkVersion
+    }
+
+    shadowJar {
+        zip64 = true
+        classifier = ""
+        manifest {
+            attributes "Main-Class": mainClassName
+        }
     }
 }
