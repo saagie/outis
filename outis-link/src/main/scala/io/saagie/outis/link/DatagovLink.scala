@@ -1,6 +1,7 @@
 package io.saagie.outis.link
 
 import io.saagie.model.{DataSet, FormatType, ParquetHiveDataset, TextFileHiveDataset}
+import io.saagie.outis.core.job.AnonymizationResult
 import io.saagie.outis.core.model.{OutisLink, OutisLinkException}
 import okhttp3.{MediaType, OkHttpClient, Request, RequestBody}
 import org.json4s.NoTypeHints
@@ -33,7 +34,7 @@ case class DatagovDataset(id: String,
                           collectionDelimiter: Option[String],
                           mapKeyDelimiter: Option[String],
                           serdeClass: Option[String]
-                  )
+                         )
 
 /**
   * Datagov's callback response.
@@ -44,7 +45,15 @@ case class DatagovDataset(id: String,
   * @param duration
   * @param rowsInError
   */
-case class DatagovNotification(datasetId: String, timestamp: Long, rowsAnonymized: Int, duration: Long = 0, rowsInError: Int = 0)
+case class DatagovNotification(datasetId: String, timestamp: Long, rowsAnonymized: Long, duration: Long = 0, rowsInError: Int = 0)
+
+object DatagovNotification {
+  def apply(anonymizationResult: AnonymizationResult): DatagovNotification = new DatagovNotification(
+    anonymizationResult.dataset.identifier.asInstanceOf[String],
+    System.currentTimeMillis(),
+    anonymizationResult.anonymizedRows,
+    anonymizationResult.duration)
+}
 
 case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) extends OutisLink {
 
@@ -76,7 +85,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
           ds.`type` match {
             case "TABLE" =>
               ds.storageFormat match {
-                case Some("TEXT_FILE") =>
+                case Some("TEXT_FILE") | Some("CSV") =>
                   TextFileHiveDataset(
                     ds.id,
                     ds.columnsToAnonymize.getOrElse(List()),
@@ -105,7 +114,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
           _ != ((): Unit)
         }
         .asInstanceOf[List[DataSet]]
-      println(s"Datasets---------------------------------------$datasets")
+      println(s"Datasets : $datasets")
       Right(datasets)
     } else {
       Left(OutisLinkException(s"Error while retrieving datasets to anonymize: ${response.code()}, ${response.message()}"))
@@ -115,17 +124,15 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
   /**
     * @inheritdoc
     */
-  override def notifyDatasetProcessed(dataSet: DataSet): Either[OutisLinkException, String] = {
+  override def notifyDatasetProcessed(anonymizationResult: AnonymizationResult): Either[OutisLinkException, String] = {
     val okHttpClient = new OkHttpClient.Builder()
       .build()
-
-    val datagovNotification = DatagovNotification(dataSet.identifier.asInstanceOf[String], System.currentTimeMillis(), 0)
 
     implicit val formats = Serialization.formats(NoTypeHints)
 
     val request = new Request.Builder()
       .url(datagovNotificationUrl)
-      .post(RequestBody.create(JSON_MEDIA_TYPE, write(datagovNotification)))
+      .post(RequestBody.create(JSON_MEDIA_TYPE, write(DatagovNotification(anonymizationResult))))
       .build()
 
     val response = okHttpClient

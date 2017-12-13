@@ -30,6 +30,8 @@ sealed trait DataSet {
   def columnsToAnonymise: List[String]
 
   def storageFormat: FormatType
+
+  var rowAnonymized: Long = 0
 }
 
 sealed trait HdfsDataSet extends DataSet {
@@ -96,7 +98,6 @@ sealed trait HiveDataSet extends DataSet {
 
   def table: String
 }
-
 
 case class ParquetHiveDataset(
                                identifier: Any,

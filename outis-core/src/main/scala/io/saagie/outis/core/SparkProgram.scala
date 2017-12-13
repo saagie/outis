@@ -15,7 +15,7 @@ case class SparkProgram(outisLink: OutisLink)(implicit sparkSession: SparkSessio
     outisLink.datasetsToAnonimyze() match {
       case Right(datasets) =>
         datasets.foreach(dataset => {
-          AnonymizationJob(dataset).anonymize()
+          val result = AnonymizationJob(dataset).anonymize()
           outisLink.notifyDatasetProcessed(dataset)
         })
       case Left(error) => log.error(error)
