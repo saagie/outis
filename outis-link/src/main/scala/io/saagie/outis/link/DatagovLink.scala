@@ -1,9 +1,12 @@
 package io.saagie.outis.link
 
+import java.net.{CookieManager, CookiePolicy}
+
 import io.saagie.model.{DataSet, FormatType, ParquetHiveDataset, TextFileHiveDataset}
 import io.saagie.outis.core.job.AnonymizationResult
 import io.saagie.outis.core.model.{OutisLink, OutisLinkException}
-import okhttp3.{MediaType, OkHttpClient, Request, RequestBody}
+import okhttp3._
+import org.apache.log4j.Logger
 import org.json4s.NoTypeHints
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read, write}
@@ -45,17 +48,22 @@ case class DatagovDataset(id: String,
   * @param duration
   * @param rowsInError
   */
-case class DatagovNotification(datasetId: String, timestamp: Long, rowsAnonymized: Long, duration: Long = 0, rowsInError: Int = 0)
+case class DatagovNotification(datasetId: String, timestamp: Long, rowsAnonymized: Long, duration: Long = 0, rowsInError: Long = 0)
 
 object DatagovNotification {
   def apply(anonymizationResult: AnonymizationResult): DatagovNotification = new DatagovNotification(
     anonymizationResult.dataset.identifier.asInstanceOf[String],
     System.currentTimeMillis(),
     anonymizationResult.anonymizedRows,
-    anonymizationResult.duration)
+    anonymizationResult.duration,
+    anonymizationResult.rowsInError)
 }
 
 case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) extends OutisLink {
+  val log: Logger = Logger.getRootLogger
+  val cookieManager: CookieManager = new CookieManager()
+  cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL)
+  val okHttpClient: OkHttpClient = new OkHttpClient.Builder().cookieJar(new JavaNetCookieJar(cookieManager)).build()
 
   import DatagovLink.JSON_MEDIA_TYPE
 
@@ -63,9 +71,6 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
     * @inheritdoc
     */
   override def datasetsToAnonimyze(): Either[OutisLinkException, List[DataSet]] = {
-    val okHttpClient = new OkHttpClient.Builder()
-      .build()
-
     val request = new Request.Builder()
       .url(datagovUrl)
       .get()
@@ -125,14 +130,25 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
     * @inheritdoc
     */
   override def notifyDatasetProcessed(anonymizationResult: AnonymizationResult): Either[OutisLinkException, String] = {
-    val okHttpClient = new OkHttpClient.Builder()
-      .build()
-
     implicit val formats = Serialization.formats(NoTypeHints)
+
+
+    val content = write(DatagovNotification(anonymizationResult))
+    val body = RequestBody.create(JSON_MEDIA_TYPE, content)
+
+    //Cookie management...
+    import scala.collection.JavaConversions._
+    val token = okHttpClient.cookieJar().loadForRequest(HttpUrl.parse(datagovNotificationUrl)).filter {
+      _.name() == "XSRF-TOKEN"
+    }.head
+
+    println(s"Token: $token")
+    println(s"Body: $content")
 
     val request = new Request.Builder()
       .url(datagovNotificationUrl)
-      .post(RequestBody.create(JSON_MEDIA_TYPE, write(DatagovNotification(anonymizationResult))))
+      .header(s"X-${token.name()}", token.value())
+      .put(body)
       .build()
 
     val response = okHttpClient
@@ -142,7 +158,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
     if (response.isSuccessful) {
       Right(response.body().string())
     } else {
-      Left(OutisLinkException(s"Problem with notification: ${response.code()}, ${response.message()}"))
+      Left(OutisLinkException(s"Problem with notification: ${response.code()}, ${response.message()}, ${response.body().string()}"))
     }
   }
 }

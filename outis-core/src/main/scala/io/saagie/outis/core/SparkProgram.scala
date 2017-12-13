@@ -16,9 +16,17 @@ case class SparkProgram(outisLink: OutisLink)(implicit sparkSession: SparkSessio
       case Right(datasets) =>
         datasets.foreach(dataset => {
           val result = AnonymizationJob(dataset).anonymize()
-          outisLink.notifyDatasetProcessed(dataset)
+          result match {
+            case Right(anonymizationResult) =>
+              val notification = outisLink.notifyDatasetProcessed(anonymizationResult)
+              notification match {
+                case Right(answer) => log.info(s"Notification ok: $answer")
+                case Left(error) => log.error("Error while notifying results", error)
+              }
+            case Left(error) => log.error("Error while anonymizing", error)
+          }
         })
-      case Left(error) => log.error(error)
+      case Left(error) => log.error("Error while retrieving datasets", error)
     }
   }
 }

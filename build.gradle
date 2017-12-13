@@ -41,7 +41,9 @@ project(':outis-link') {
 
         compile group: 'org.scala-lang', name: 'scala-library', version: "$scalaMajor.$scalaMinor"
         compile group: 'com.squareup.okhttp3', name: 'okhttp', version: okHttpVersion
+        compile group: 'com.squareup.okhttp3', name: 'okhttp-urlconnection', version: okHttpVersion
         compile group: 'org.json4s', name: "json4s-native_$scalaMajor", version: json4sVersion
+
 
         compileOnly group: "org.apache.spark", name: "spark-core_$scalaMajor", version: sparkVersion
         compileOnly group: "org.apache.spark", name: "spark-sql_$scalaMajor", version: sparkVersion

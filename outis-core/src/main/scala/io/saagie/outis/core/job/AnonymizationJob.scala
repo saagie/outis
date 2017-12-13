@@ -45,7 +45,13 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       val anonymizedRows = spark.sparkContext.longAccumulator("anonymizedRows")
       val columnsNonAnonymised = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
       val tmpPath = dataset.hdfsUrl + "-tmp"
-      df.select(
+      //val condition = df("")
+
+      val numberOfRowsToProcess = df
+        //.where(condition)
+        .count()
+
+      val anodf = df.select(
         columnsNonAnonymised.map(c => col(c).alias(c))
           .union(dataset.columnsToAnonymise.map(c => {
             val column = col(c).alias(c)
@@ -53,12 +59,17 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             column
           })
           ): _*)
+      //.where(condition)
+
+      val numberOfRowsProcessed = anodf.count()
+
+      anodf
         .write
         .format(dataset.storageFormat.toString)
         .save(tmpPath)
 
       HdfsUtils(dataset.hdfsUrl).deleteFiles(List(new Path(dataset.hdfsUrl)))
-      Right(AnonymizationResult(dataset, anonymizedRows.value, System.currentTimeMillis() - start))
+      Right(AnonymizationResult(dataset, anonymizedRows.value, System.currentTimeMillis() - start, numberOfRowsToProcess - numberOfRowsProcessed))
     } else {
       Left(possibleDf.left.get)
     }
@@ -88,6 +99,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     * @return
     */
   private def anonymiseFromHive[T <: HiveDataSet](dataset: T): Either[AnonymizationException, AnonymizationResult] = {
+    import org.apache.spark.sql.functions._
     val start = System.currentTimeMillis()
     val Array(database, table) = dataset.table.split('.')
 
@@ -95,8 +107,12 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
     val sparkTmpTable = s"spark_$table"
 
+    //val condition = $""
+
     val df: DataFrame = spark.sql(s"SELECT * FROM $database.$table")
-    df.show()
+    val numberOfRowsToProcess = df
+      //.where(condition)
+      .count()
 
     //TODO: Make this serializable
     /*    val anonymizeString = getStringAnonymization.right.map(method => spark.sqlContext.udf.register("anonymizeString",
@@ -107,9 +123,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             }).asInstanceOf[Seq[Object]]: _*).asInstanceOf[String]
         ))*/
     val anonymizeString = Right(spark.udf.register("anonymizeString", (s: String) => AnonymizeString.substitute(s)))
-
     if (anonymizeString.isRight) {
-      val anonymizedRows = spark.sparkContext.longAccumulator("anonymizedRows")
       val stringAnonimyzer = anonymizeString.right.get
       val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
       val anodf = df.select(
@@ -117,14 +131,14 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
           .union(dataset.columnsToAnonymise
             .map(c => {
               df.schema(c).dataType match {
-                case StringType =>
-                  val column = stringAnonimyzer(col(c)).alias(c)
-                  anonymizedRows.add(1)
-                  column
+                case StringType => stringAnonimyzer(col(c)).alias(c)
                 case _ => col(c).alias(c)
               }
             })
           ): _*)
+      //.where(condition)
+
+      val numberOfRowsProcessed = anodf.count()
       anodf.show()
       anodf.createOrReplaceTempView(sparkTmpTable)
 
@@ -141,7 +155,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       spark.sql(dropTable)
       val alterTable = s"ALTER TABLE $tmpTable RENAME TO $database.$table"
       spark.sql(alterTable)
-      Right(AnonymizationResult(dataset, anonymizedRows.value, System.currentTimeMillis() - start))
+      Right(AnonymizationResult(dataset, numberOfRowsProcessed, System.currentTimeMillis() - start, numberOfRowsToProcess - numberOfRowsProcessed))
     } else {
       Left(AnonymizationException("Anonymization not present"))
     }
