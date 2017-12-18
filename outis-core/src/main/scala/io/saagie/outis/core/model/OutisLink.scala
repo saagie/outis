@@ -1,6 +1,5 @@
 package io.saagie.outis.core.model
 
-import io.saagie.model.DataSet
 import io.saagie.outis.core.job.AnonymizationResult
 
 /**

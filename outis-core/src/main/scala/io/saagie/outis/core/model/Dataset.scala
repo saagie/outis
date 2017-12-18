@@ -1,7 +1,7 @@
-package io.saagie.model
+package io.saagie.outis.core.model
 
-import io.saagie.model.FormatType.FormatType
-import io.saagie.model.ParquetCompressionCodec.ParquetCompressionCodec
+import io.saagie.outis.core.model.FormatType.FormatType
+import io.saagie.outis.core.model.ParquetCompressionCodec.ParquetCompressionCodec
 
 
 object FormatType extends Enumeration {

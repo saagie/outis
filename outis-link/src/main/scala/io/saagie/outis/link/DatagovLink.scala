@@ -2,7 +2,7 @@ package io.saagie.outis.link
 
 import java.net.{CookieManager, CookiePolicy}
 
-import io.saagie.model.{DataSet, FormatType, ParquetHiveDataset, TextFileHiveDataset}
+import io.saagie.outis.core.model.{DataSet, FormatType, ParquetHiveDataset, TextFileHiveDataset}
 import io.saagie.outis.core.job.AnonymizationResult
 import io.saagie.outis.core.model.{OutisLink, OutisLinkException}
 import okhttp3._

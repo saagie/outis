@@ -3,11 +3,11 @@ package io.saagie.outis.core.job
 import java.lang.reflect.Method
 
 import com.databricks.spark.avro._
-import io.saagie.model._
-import io.saagie.outis.core.anonymize.{AnonymizationException, AnonymizeString}
+import io.saagie.outis.core.model._
+import io.saagie.outis.core.anonymize.{AnonymizationException, AnonymizeNumeric, AnonymizeString}
 import io.saagie.outis.core.util.HdfsUtils
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import scala.reflect.internal.util.ScalaClassLoader
@@ -123,15 +123,38 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             }).asInstanceOf[Seq[Object]]: _*).asInstanceOf[String]
         ))*/
     val anonymizeString = Right(spark.udf.register("anonymizeString", (s: String) => AnonymizeString.substitute(s)))
+    val anonymizeByte = Right(spark.udf.register("anonymizeByte", (b: Byte) => AnonymizeNumeric.substituteByte(b)))
+    val anonymizeShort = Right(spark.udf.register("anonymizeShort", (s: Short) => AnonymizeNumeric.substituteShort(s)))
+    val anonymizeInt = Right(spark.udf.register("anonymizeInt", (i: Int) => AnonymizeNumeric.substituteInt(i)))
+    val anonymizeLong = Right(spark.udf.register("anonymizeLong", (l: Long) => AnonymizeNumeric.substituteLong(l)))
+    val anonymizeFloat = Right(spark.udf.register("anonymizeFloat", (f: Float) => AnonymizeNumeric.substituteFloat(f)))
+    val anonymizeDouble = Right(spark.udf.register("anonymizeDouble", (d: Double) => AnonymizeNumeric.substituteDouble(d)))
+    val anonymizeBigDecimal = Right(spark.udf.register("anonymize", (bd: BigDecimal) => AnonymizeNumeric.substituteBigDecimal(bd)))
+
     if (anonymizeString.isRight) {
-      val stringAnonimyzer = anonymizeString.right.get
+      val stringAnonymizer = anonymizeString.right.get
+      val byteAnonymizer = anonymizeByte.right.get
+      val shortAnonymizer = anonymizeShort.right.get
+      val intAnonymizer = anonymizeInt.right.get
+      val longAnonymizer = anonymizeLong.right.get
+      val floatAnonymizer = anonymizeFloat.right.get
+      val doubleAnonymizer = anonymizeDouble.right.get
+      val bigDecimalAnonymizer = anonymizeBigDecimal.right.get
+
       val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
       val anodf = df.select(
         columnsNonAnonymized.map(c => col(c).alias(c))
           .union(dataset.columnsToAnonymise
             .map(c => {
               df.schema(c).dataType match {
-                case StringType => stringAnonimyzer(col(c)).alias(c)
+                case StringType => stringAnonymizer(col(c)).alias(c)
+                case ByteType => byteAnonymizer(col(c)).alias(c)
+                case ShortType => shortAnonymizer(col(c)).alias(c)
+                case IntegerType => intAnonymizer(col(c)).alias(c)
+                case LongType => longAnonymizer(col(c)).alias(c)
+                case FloatType => floatAnonymizer(col(c)).alias(c)
+                case DoubleType => doubleAnonymizer(col(c)).alias(c)
+                case DecimalType() => bigDecimalAnonymizer(col(c)).alias(c)
                 case _ => col(c).alias(c)
               }
             })
