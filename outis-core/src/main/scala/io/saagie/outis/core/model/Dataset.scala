@@ -129,7 +129,7 @@ case class TextFileHiveDataset(
                                 escapeDelimiter: String = "\"\"",
                                 lineDelimiter: String = "\n",
                                 collectionDelimiter: String = "\u0002",
-                                mapKeyDelimiter: String = "\u0003",
+                                mapKeyDelimiter: String = "\u0003"
                               ) extends HiveDataSet
 
 

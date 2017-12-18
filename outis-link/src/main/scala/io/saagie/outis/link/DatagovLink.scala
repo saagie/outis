@@ -107,7 +107,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
                     FormatType.TEXTFILE,
                     ds.name,
                     ds.serdeClass.get,
-                    Column(ds.entryDate.name, ds.entryDate.`type`, ds.entryDate.format, ds.delay),
+                    Column(ds.entryDate.name, ds.entryDate.`type`, ds.entryDate.format, Some(ds.delay)),
                     ds.fieldDelimiter.getOrElse("\u0001"),
                     ds.escapeDelimiter.getOrElse("\u0001"),
                     ds.lineDelimiter.getOrElse("\n"),
