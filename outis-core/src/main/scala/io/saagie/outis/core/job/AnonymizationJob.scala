@@ -44,7 +44,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     if (possibleDf.isRight) {
       val df = possibleDf.right.get
       val anonymizedRows = spark.sparkContext.longAccumulator("anonymizedRows")
-      val columnsNonAnonymised = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
+      val columnsNonAnonymised = df.columns.filter(c => !(dataset.columnsToAnonymize contains c))
       val tmpPath = dataset.hdfsUrl + "-tmp"
       //val condition = df("")
 
@@ -54,8 +54,8 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
       val anodf = df.select(
         columnsNonAnonymised.map(c => col(c).alias(c))
-          .union(dataset.columnsToAnonymise.map(c => {
-            val column = col(c).alias(c)
+          .union(dataset.columnsToAnonymize.map(c => {
+            val column = col(c.name).alias(c.name)
             anonymizedRows.add(1)
             column
           })
@@ -101,6 +101,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     */
   private def anonymiseFromHive[T <: HiveDataSet](dataset: T): Either[AnonymizationException, AnonymizationResult] = {
     import org.apache.spark.sql.functions._
+
     val start = System.currentTimeMillis()
     val Array(database, table) = dataset.table.split('.')
 
@@ -108,9 +109,17 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
     val sparkTmpTable = s"spark_$table"
 
-    //val condition = $""
+    val entryDate = dataset.entryDate.format match {
+      case Some(f) =>
+        to_date(unix_timestamp(col(dataset.entryDate.name), f))
+      case None => to_date(col(dataset.entryDate.name))
+    }
 
-    val df: DataFrame = spark.sql(s"SELECT * FROM $database.$table")
+    val condition = date_add(entryDate, dataset.entryDate.delay.get) > current_date()
+
+    val df: DataFrame = spark
+      .sql(s"SELECT * FROM $database.$table")
+      .where(condition)
 
     //TODO: Make this serializable
     /*    val anonymizeString = getStringAnonymization.right.map(method => spark.sqlContext.udf.register("anonymizeString",
@@ -141,28 +150,26 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       val doubleAnonymizer = anonymizeDouble.right.get
       val bigDecimalAnonymizer = anonymizeBigDecimal.right.get
 
-      val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymise contains c))
+      val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymize contains c))
       val anodf = df.select(
         columnsNonAnonymized.map(c => col(c).alias(c))
-          .union(dataset.columnsToAnonymise
+          .union(dataset.columnsToAnonymize
             .map(c => {
-              df.schema(c).dataType match {
-                case StringType => stringAnonymizer(col(c)).alias(c)
-                case ByteType => byteAnonymizer(col(c)).alias(c)
-                case ShortType => shortAnonymizer(col(c)).alias(c)
-                case IntegerType => intAnonymizer(col(c)).alias(c)
-                case LongType => longAnonymizer(col(c)).alias(c)
-                case FloatType => floatAnonymizer(col(c)).alias(c)
-                case DoubleType => doubleAnonymizer(col(c)).alias(c)
-                case DecimalType() => bigDecimalAnonymizer(col(c)).alias(c)
-                case _ => col(c).alias(c)
+              df.schema(c.name).dataType match {
+                case StringType => stringAnonymizer(col(c.name)).alias(c.name)
+                case ByteType => byteAnonymizer(col(c.name)).alias(c.name)
+                case ShortType => shortAnonymizer(col(c.name)).alias(c.name)
+                case IntegerType => intAnonymizer(col(c.name)).alias(c.name)
+                case LongType => longAnonymizer(col(c.name)).alias(c.name)
+                case FloatType => floatAnonymizer(col(c.name)).alias(c.name)
+                case DoubleType => doubleAnonymizer(col(c.name)).alias(c.name)
+                case DecimalType() => bigDecimalAnonymizer(col(c.name)).alias(c.name)
+                case _ => col(c.name).alias(c.name)
               }
             })
           ): _*)
-      //.where(condition)
 
-      val numberOfRowsProcessed = anodf.count()
-      anodf.show()
+      val numberOfRowsProcessed = anodf.count() - errorAccumulator.value
       anodf.createOrReplaceTempView(sparkTmpTable)
 
       val options: String = dataset match {

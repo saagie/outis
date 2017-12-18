@@ -2,14 +2,22 @@ package io.saagie.outis.link
 
 import java.net.{CookieManager, CookiePolicy}
 
-import io.saagie.outis.core.model.{DataSet, FormatType, ParquetHiveDataset, TextFileHiveDataset}
 import io.saagie.outis.core.job.AnonymizationResult
-import io.saagie.outis.core.model.{OutisLink, OutisLinkException}
+import io.saagie.outis.core.model._
 import okhttp3._
 import org.apache.log4j.Logger
 import org.json4s.NoTypeHints
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read, write}
+
+/**
+  * Datagov column
+  *
+  * @param name   name of the column.
+  * @param `type` type of the column, used only to specify date in String formats.
+  * @param format Optional, must be provided for String dates.
+  */
+case class DatagovColumn(name: String, `type`: String, format: Option[String])
 
 /**
   * Datagov's dataset description.
@@ -29,7 +37,9 @@ import org.json4s.native.Serialization.{read, write}
 case class DatagovDataset(id: String,
                           name: String,
                           `type`: String,
-                          columnsToAnonymize: Option[List[String]],
+                          delay: Int,
+                          entryDate: DatagovColumn,
+                          columnsToAnonymize: Option[List[DatagovColumn]],
                           storageFormat: Option[String],
                           fieldDelimiter: Option[String],
                           escapeDelimiter: Option[String],
@@ -93,22 +103,24 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
                 case Some("TEXT_FILE") | Some("CSV") =>
                   TextFileHiveDataset(
                     ds.id,
-                    ds.columnsToAnonymize.getOrElse(List()),
+                    ds.columnsToAnonymize.getOrElse(List()).map(c => Column(c.name, c.`type`, c.format)),
                     FormatType.TEXTFILE,
                     ds.name,
+                    ds.serdeClass.get,
+                    Column(ds.entryDate.name, ds.entryDate.`type`, ds.entryDate.format, ds.delay),
                     ds.fieldDelimiter.getOrElse("\u0001"),
                     ds.escapeDelimiter.getOrElse("\u0001"),
                     ds.lineDelimiter.getOrElse("\n"),
                     ds.collectionDelimiter.getOrElse("\u0002"),
-                    ds.mapKeyDelimiter.getOrElse("\u0003"),
-                    ds.serdeClass.get
+                    ds.mapKeyDelimiter.getOrElse("\u0003")
                   )
                 case Some("PARQUET") =>
                   ParquetHiveDataset(
                     ds.id,
-                    ds.columnsToAnonymize.get,
+                    ds.columnsToAnonymize.get.map(c => Column(c.name, c.`type`, c.format)),
                     FormatType.PARQUET,
-                    ds.name
+                    ds.name,
+                    Column(ds.entryDate.name, ds.entryDate.`type`, ds.entryDate.format)
                   )
                 case _ =>
               }
