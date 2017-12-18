@@ -1,6 +1,8 @@
 package io.saagie.outis.core.anonymize
 
-import scala.util.Random
+import org.apache.spark.util.LongAccumulator
+
+import scala.util.{Failure, Random, Success, Try}
 
 /**
   * Anonymization object for numerics
@@ -72,7 +74,7 @@ object AnonymizeNumeric {
     *
     * @param value the value to replace.
     * @param range The range of the value.
-    * @param sign The sign of the generated value.
+    * @param sign  The sign of the generated value.
     * @return String representation of the value.
     */
   def replace(value: Any, range: Any, sign: Boolean): String = {
@@ -87,65 +89,128 @@ object AnonymizeNumeric {
 
   /**
     * Substitute a Byte value.
+    *
     * @param b
+    * @param errorAccumulator
     * @return
     */
-  def substituteByte(b: Byte): Byte = {
-    substituteValue(b).toByte
+  def substituteByte(b: Byte, errorAccumulator: LongAccumulator): Byte = {
+    Try {
+      substituteValue(b).toByte
+    } match {
+      case Success(value) => value
+      case Failure(e) =>
+        errorAccumulator.add(1)
+        b
+    }
   }
 
   /**
     * Substitute a Short value.
+    *
     * @param s
+    * @param errorAccumulator
     * @return
     */
-  def substituteShort(s: Short): Short = {
-    substituteValue(s).toShort
+  def substituteShort(s: Short, errorAccumulator: LongAccumulator): Short = {
+    Try {
+      substituteValue(s).toShort
+    } match {
+      case Success(value) => value
+      case Failure(e) =>
+        errorAccumulator.add(1)
+        s
+    }
   }
 
   /**
     * Substitute an Int value.
+    *
     * @param i
+    * @param errorAccumulator
     * @return
     */
-  def substituteInt(i: Integer): Int = {
-    substituteValue(i).toInt
+  def substituteInt(i: Integer, errorAccumulator: LongAccumulator): Int = {
+    Try {
+      substituteValue(i).toInt
+    } match {
+      case Success(value) => value
+      case Failure(e) =>
+        errorAccumulator.add(1)
+        i
+    }
   }
 
   /**
     * Substitute a Long value.
+    *
     * @param l
+    * @param errorAccumulator
     * @return
     */
-  def substituteLong(l: Long): Long = {
-    substituteValue(l).toLong
+  def substituteLong(l: Long, errorAccumulator: LongAccumulator): Long = {
+    Try {
+      substituteValue(l).toLong
+    } match {
+      case Success(value) => value
+      case Failure(e) =>
+        errorAccumulator.add(1)
+        l
+    }
   }
 
   /**
     * Substitute a Float value.
+    *
     * @param f
+    * @param errorAccumulator
     * @return
     */
-  def substituteFloat(f: Float): Float = {
-    substituteValue(f).toFloat
+  def substituteFloat(f: Float, errorAccumulator: LongAccumulator): Float = {
+    Try {
+      substituteValue(f).toFloat
+    } match {
+      case Success(value) => value
+      case Failure(e) =>
+        errorAccumulator.add(1)
+        f
+    }
   }
 
   /**
     * Substitute a Double value.
+    *
     * @param d
+    * @param errorAccumulator
     * @return
     */
-  def substituteDouble(d: Double): Double = {
-    substituteValue(d).toDouble
+  def substituteDouble(d: Double, errorAccumulator: LongAccumulator): Double = {
+    Try {
+      substituteValue(d).toDouble
+    } match {
+      case Success(value) => value
+      case Failure(e) =>
+        errorAccumulator.add(1)
+        d
+    }
   }
 
   /**
     * Substitute a BigDecimal value.
+    *
     * @param bd
+    * @param errorAccumulator
     * @return
     */
-  def substituteBigDecimal(bd: BigDecimal): BigDecimal = {
-    BigDecimal(substituteValue(bd))
+  def substituteBigDecimal(bd: BigDecimal, errorAccumulator: LongAccumulator): BigDecimal = {
+    Try {
+      BigDecimal(substituteValue(bd))
+    } match {
+      case Success(value) => value
+      case Failure(e) =>
+        errorAccumulator.add(1)
+        bd
+    }
   }
 
 }

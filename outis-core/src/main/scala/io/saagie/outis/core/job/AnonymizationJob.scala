@@ -3,12 +3,13 @@ package io.saagie.outis.core.job
 import java.lang.reflect.Method
 
 import com.databricks.spark.avro._
-import io.saagie.outis.core.model._
 import io.saagie.outis.core.anonymize.{AnonymizationException, AnonymizeNumeric, AnonymizeString}
+import io.saagie.outis.core.model._
 import io.saagie.outis.core.util.HdfsUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.util.LongAccumulator
 
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.util.{Failure, Success, Try}
@@ -110,9 +111,6 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     //val condition = $""
 
     val df: DataFrame = spark.sql(s"SELECT * FROM $database.$table")
-    val numberOfRowsToProcess = df
-      //.where(condition)
-      .count()
 
     //TODO: Make this serializable
     /*    val anonymizeString = getStringAnonymization.right.map(method => spark.sqlContext.udf.register("anonymizeString",
@@ -122,14 +120,16 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
               case x => x
             }).asInstanceOf[Seq[Object]]: _*).asInstanceOf[String]
         ))*/
-    val anonymizeString = Right(spark.udf.register("anonymizeString", (s: String) => AnonymizeString.substitute(s)))
-    val anonymizeByte = Right(spark.udf.register("anonymizeByte", (b: Byte) => AnonymizeNumeric.substituteByte(b)))
-    val anonymizeShort = Right(spark.udf.register("anonymizeShort", (s: Short) => AnonymizeNumeric.substituteShort(s)))
-    val anonymizeInt = Right(spark.udf.register("anonymizeInt", (i: Int) => AnonymizeNumeric.substituteInt(i)))
-    val anonymizeLong = Right(spark.udf.register("anonymizeLong", (l: Long) => AnonymizeNumeric.substituteLong(l)))
-    val anonymizeFloat = Right(spark.udf.register("anonymizeFloat", (f: Float) => AnonymizeNumeric.substituteFloat(f)))
-    val anonymizeDouble = Right(spark.udf.register("anonymizeDouble", (d: Double) => AnonymizeNumeric.substituteDouble(d)))
-    val anonymizeBigDecimal = Right(spark.udf.register("anonymize", (bd: BigDecimal) => AnonymizeNumeric.substituteBigDecimal(bd)))
+    val errorAccumulator: LongAccumulator = spark.sparkContext.longAccumulator("errors")
+
+    val anonymizeString = Right(spark.udf.register("anonymizeString", (s: String) => AnonymizeString.substitute(s, errorAccumulator)))
+    val anonymizeByte = Right(spark.udf.register("anonymizeByte", (b: Byte) => AnonymizeNumeric.substituteByte(b, errorAccumulator)))
+    val anonymizeShort = Right(spark.udf.register("anonymizeShort", (s: Short) => AnonymizeNumeric.substituteShort(s, errorAccumulator)))
+    val anonymizeInt = Right(spark.udf.register("anonymizeInt", (i: Int) => AnonymizeNumeric.substituteInt(i, errorAccumulator)))
+    val anonymizeLong = Right(spark.udf.register("anonymizeLong", (l: Long) => AnonymizeNumeric.substituteLong(l, errorAccumulator)))
+    val anonymizeFloat = Right(spark.udf.register("anonymizeFloat", (f: Float) => AnonymizeNumeric.substituteFloat(f, errorAccumulator)))
+    val anonymizeDouble = Right(spark.udf.register("anonymizeDouble", (d: Double) => AnonymizeNumeric.substituteDouble(d, errorAccumulator)))
+    val anonymizeBigDecimal = Right(spark.udf.register("anonymize", (bd: BigDecimal) => AnonymizeNumeric.substituteBigDecimal(bd, errorAccumulator)))
 
     if (anonymizeString.isRight) {
       val stringAnonymizer = anonymizeString.right.get
@@ -178,7 +178,8 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       spark.sql(dropTable)
       val alterTable = s"ALTER TABLE $tmpTable RENAME TO $database.$table"
       spark.sql(alterTable)
-      Right(AnonymizationResult(dataset, numberOfRowsProcessed, System.currentTimeMillis() - start, numberOfRowsToProcess - numberOfRowsProcessed))
+
+      Right(AnonymizationResult(dataset, numberOfRowsProcessed, System.currentTimeMillis() - start, errorAccumulator.value))
     } else {
       Left(AnonymizationException("Anonymization not present"))
     }

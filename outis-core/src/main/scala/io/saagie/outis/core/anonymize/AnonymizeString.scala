@@ -1,7 +1,9 @@
 package io.saagie.outis.core.anonymize
 
+import org.apache.spark.util.LongAccumulator
+
 import scala.collection.immutable
-import scala.util.Random
+import scala.util.{Failure, Random, Success, Try}
 
 object AnonymizeString {
 
@@ -25,12 +27,19 @@ object AnonymizeString {
     }
   }
 
-  def substitute(value: String): String = {
-    value.map {
-      case c if c.isDigit => Random.nextInt(9)
-      case c if c.isLetter => letters(Random.nextInt(letters.size))
-      case c => c.toString
-    }.mkString
+  def substitute(value: String, errorAccumulator: LongAccumulator): String = {
+    Try {
+      value.map {
+        case c if c.isDigit => Random.nextInt(9)
+        case c if c.isLetter => letters(Random.nextInt(letters.size))
+        case c => c.toString
+      }.mkString
+    } match {
+      case Success(s) => s
+      case Failure(e) =>
+        errorAccumulator.add(1)
+        value
+    }
   }
 
 }
