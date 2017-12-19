@@ -29,6 +29,8 @@ case class Column(name: String, columnType: String, format: Option[String] = Non
 sealed trait DataSet {
   def identifier: Any
 
+  def name: String
+
   def columnsToAnonymize: List[Column]
 
   def storageFormat: FormatType
@@ -50,6 +52,7 @@ sealed trait HdfsDataSet extends DataSet {
 
 case class CsvHdfsDataset(
                            identifier: Any,
+                           name: String,
                            columnsToAnonymize: List[Column],
                            storageFormat: FormatType,
                            hdfsUrl: String,
@@ -62,6 +65,7 @@ case class CsvHdfsDataset(
 
 case class JsonHdfsDataset(
                             identifier: Any,
+                            name: String,
                             columnsToAnonymize: List[Column],
                             storageFormat: FormatType,
                             hdfsUrl: String,
@@ -71,6 +75,7 @@ case class JsonHdfsDataset(
 
 case class ParquetHdfsDataset(
                                identifier: Any,
+                               name: String,
                                columnsToAnonymize: List[Column],
                                storageFormat: FormatType,
                                hdfsUrl: String,
@@ -82,6 +87,7 @@ case class ParquetHdfsDataset(
 
 case class OrcHdfsDataset(
                            identifier: Any,
+                           name: String,
                            columnsToAnonymize: List[Column],
                            storageFormat: FormatType,
                            hdfsUrl: String,
@@ -91,6 +97,7 @@ case class OrcHdfsDataset(
 
 case class AvroHdfsDataset(
                             identifier: Any,
+                            name: String,
                             columnsToAnonymize: List[Column],
                             storageFormat: FormatType,
                             hdfsUrl: String,
@@ -111,6 +118,7 @@ sealed trait HiveDataSet extends DataSet {
 
 case class ParquetHiveDataset(
                                identifier: Any,
+                               name: String,
                                columnsToAnonymize: List[Column],
                                storageFormat: FormatType,
                                table: String,
@@ -120,6 +128,7 @@ case class ParquetHiveDataset(
 
 case class TextFileHiveDataset(
                                 identifier: Any,
+                                name: String,
                                 columnsToAnonymize: List[Column],
                                 storageFormat: FormatType,
                                 table: String,
@@ -135,6 +144,7 @@ case class TextFileHiveDataset(
 
 case class AvroHiveDataset(
                             identifier: Any,
+                            name: String,
                             columnsToAnonymize: List[Column],
                             storageFormat: FormatType,
                             table: String,
@@ -144,6 +154,7 @@ case class AvroHiveDataset(
 
 case class RcFileHiveDataset(
                               identifier: Any,
+                              name: String,
                               columnsToAnonymize: List[Column],
                               storageFormat: FormatType,
                               table: String,
@@ -153,6 +164,7 @@ case class RcFileHiveDataset(
 
 case class OrcHiveDataset(
                            identifier: Any,
+                           name: String,
                            columnsToAnonymize: List[Column],
                            storageFormat: FormatType,
                            table: String,
@@ -161,6 +173,7 @@ case class OrcHiveDataset(
 
 case class SequenceFileHiveDataset(
                                     identifier: Any,
+                                    name: String,
                                     columnsToAnonymize: List[Column],
                                     storageFormat: FormatType,
                                     table: String,

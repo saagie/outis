@@ -1,11 +1,14 @@
 package io.saagie.outis.core.anonymize
 
+import org.apache.log4j.Logger
 import org.apache.spark.util.LongAccumulator
 
 import scala.collection.immutable
 import scala.util.{Failure, Random, Success, Try}
 
 object AnonymizeString {
+
+  val logger: Logger = Logger.getRootLogger
 
   val letters: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z')
 
@@ -37,6 +40,7 @@ object AnonymizeString {
     } match {
       case Success(s) => s
       case Failure(e) =>
+        logger.error(s"Impossible to process column value $value", e)
         errorAccumulator.add(1)
         value
     }

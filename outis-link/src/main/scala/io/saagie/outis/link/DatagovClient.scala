@@ -53,6 +53,8 @@ object DatagovClient extends App {
       .builder()
       .appName(applicationName)
       .config("hive.metastore.warehouse.dir", "hdfs://cluster/user/hive/warehouse")
+      .config("spark.eventLog.dir", "hdfs://cluster/tmp/spark-events")
+      .config("spark.eventLog.enabled", "true")
       .enableHiveSupport()
       .getOrCreate()
     sparkSession.sparkContext.setLogLevel("ERROR")

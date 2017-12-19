@@ -5,12 +5,17 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit.DAYS
 import java.time.{LocalDate, LocalDateTime}
 
-import scala.util.{Random, Try}
+import org.apache.log4j.Logger
+import org.apache.spark.util.LongAccumulator
+
+import scala.util.{Failure, Random, Success, Try}
 
 
 object AnonymizeDate {
 
-  val from: LocalDate =  LocalDate.of(1920, 1, 1)
+  val logger: Logger = Logger.getRootLogger
+
+  val from: LocalDate = LocalDate.of(1920, 1, 1)
   val to: LocalDate = LocalDate.now()
   val hours = 23
   val minutes = 59
@@ -27,24 +32,44 @@ object AnonymizeDate {
     Some(num % 2 == 0)
   }
 
-  def randomDate(date: Date): Option[Date] = {
-    Option(date).getOrElse(return None)
-    val time: LocalDateTime = generateLocalDateTime
-    Some(Date.valueOf(time.toLocalDate))
-
+  def randomDate(date: Date, errorAccumulator: LongAccumulator): Date = {
+    Try {
+      val time: LocalDateTime = generateLocalDateTime
+      Date.valueOf(time.toLocalDate)
+    } match {
+      case Success(d) => d
+      case Failure(e) =>
+        logger.error(s"Impossible to process column value $date", e)
+        errorAccumulator.add(1)
+        date
+    }
   }
 
-  def randomTimestamp(date: Timestamp): Option[Timestamp] = {
-    Option(date).getOrElse(return None)
-    val time: LocalDateTime = generateLocalDateTime
-    Some(Timestamp.valueOf(time))
+  def randomTimestamp(date: Timestamp, errorAccumulator: LongAccumulator): Timestamp = {
+    Try {
+      val time: LocalDateTime = generateLocalDateTime
+      Timestamp.valueOf(time)
+    } match {
+      case Success(d) => d
+      case Failure(e) =>
+        logger.error(s"Impossible to process column value $date", e)
+        errorAccumulator.add(1)
+        date
+    }
   }
 
-  def randomString(date: String, pattern: String): Option[String] = {
-    Option(date).getOrElse(return None)
-    val time: LocalDateTime = generateLocalDateTime
-    val formatter = DateTimeFormatter.ofPattern(pattern)
-    Try(time.format(formatter)).toOption
+  def randomString(date: String, pattern: String, errorAccumulator: LongAccumulator): String = {
+    Try {
+      val time: LocalDateTime = generateLocalDateTime
+      val formatter = DateTimeFormatter.ofPattern(pattern)
+      time.format(formatter)
+    } match {
+      case Success(d) => d
+      case Failure(e) =>
+        logger.error(s"Impossible to process column value $date", e)
+        errorAccumulator.add(1)
+        date
+    }
   }
 
 }

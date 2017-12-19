@@ -1,5 +1,6 @@
 package io.saagie.outis.core.anonymize
 
+import org.apache.log4j.Logger
 import org.apache.spark.util.LongAccumulator
 
 import scala.util.{Failure, Random, Success, Try}
@@ -8,6 +9,8 @@ import scala.util.{Failure, Random, Success, Try}
   * Anonymization object for numerics
   */
 object AnonymizeNumeric {
+
+  val logger: Logger = Logger.getRootLogger
 
   /**
     * Replace values with appropiate range.
@@ -100,6 +103,7 @@ object AnonymizeNumeric {
     } match {
       case Success(value) => value
       case Failure(e) =>
+        logger.error(s"Impossible to process column value $b", e)
         errorAccumulator.add(1)
         b
     }
@@ -118,6 +122,7 @@ object AnonymizeNumeric {
     } match {
       case Success(value) => value
       case Failure(e) =>
+        logger.error(s"Impossible to process column value $s", e)
         errorAccumulator.add(1)
         s
     }
@@ -136,6 +141,7 @@ object AnonymizeNumeric {
     } match {
       case Success(value) => value
       case Failure(e) =>
+        logger.error(s"Impossible to process column value $i", e)
         errorAccumulator.add(1)
         i
     }
@@ -154,6 +160,7 @@ object AnonymizeNumeric {
     } match {
       case Success(value) => value
       case Failure(e) =>
+        logger.error(s"Impossible to process column value $l", e)
         errorAccumulator.add(1)
         l
     }
@@ -172,6 +179,7 @@ object AnonymizeNumeric {
     } match {
       case Success(value) => value
       case Failure(e) =>
+        logger.error(s"Impossible to process column value $f", e)
         errorAccumulator.add(1)
         f
     }
@@ -190,6 +198,7 @@ object AnonymizeNumeric {
     } match {
       case Success(value) => value
       case Failure(e) =>
+        logger.error(s"Impossible to process column value $d", e)
         errorAccumulator.add(1)
         d
     }
@@ -208,9 +217,9 @@ object AnonymizeNumeric {
     } match {
       case Success(value) => value
       case Failure(e) =>
+        logger.error(s"Impossible to process column value ${bd.toString()}", e)
         errorAccumulator.add(1)
         bd
     }
   }
-
 }

@@ -20,9 +20,15 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
   import org.apache.spark.sql.functions.col
 
   def anonymize(): Either[AnonymizationException, AnonymizationResult] = {
-    dataset match {
-      case d: HiveDataSet => anonymiseFromHive(d)
-      case d: HdfsDataSet => anonymizeFromHdfs(d)
+    Try {
+      dataset match {
+        case d: HiveDataSet => anonymiseFromHive(d)
+        case d: HdfsDataSet => anonymizeFromHdfs(d)
+      }
+    } match {
+      case Success(s) => s
+      case Failure(e) =>
+        Left(AnonymizationException(s"Impossible to anonymize dataset: ${dataset.identifier} : ${dataset.name}", e))
     }
   }
 
@@ -99,6 +105,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     */
   private def anonymiseFromHive[T <: HiveDataSet](dataset: T): Either[AnonymizationException, AnonymizationResult] = {
     import org.apache.spark.sql.functions._
+    import spark.implicits._
 
     val start = System.currentTimeMillis()
     val Array(database, table) = dataset.table.split('.')
@@ -136,9 +143,9 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     val anonymizeFloat = Right(spark.udf.register("anonymizeFloat", (f: Float) => AnonymizeNumeric.substituteFloat(f, errorAccumulator)))
     val anonymizeDouble = Right(spark.udf.register("anonymizeDouble", (d: Double) => AnonymizeNumeric.substituteDouble(d, errorAccumulator)))
     val anonymizeBigDecimal = Right(spark.udf.register("anonymize", (bd: BigDecimal) => AnonymizeNumeric.substituteBigDecimal(bd, errorAccumulator)))
-    val anonymizeDate = Right(spark.udf.register("anonymizeDate", (d: Date) => AnonymizeDate.randomDate(d)))
-    val anonymizeTimestamp = Right(spark.udf.register("anonymizeTimestamp", (d: Timestamp) => AnonymizeDate.randomTimestamp(d)))
-    val anonymizeDateString = Right(spark.udf.register("anonymizeDateString", (d: String, pattern: String) => AnonymizeDate.randomString(d, pattern)))
+    val anonymizeDate = Right(spark.udf.register("anonymizeDate", (d: Date) => AnonymizeDate.randomDate(d, errorAccumulator)))
+    val anonymizeTimestamp = Right(spark.udf.register("anonymizeTimestamp", (d: Timestamp) => AnonymizeDate.randomTimestamp(d, errorAccumulator)))
+    val anonymizeDateString = Right(spark.udf.register("anonymizeDateString", (d: String, pattern: String) => AnonymizeDate.randomString(d, pattern, errorAccumulator)))
 
     if (anonymizeString.isRight) {
       val stringAnonymizer = anonymizeString.right.get
@@ -159,7 +166,10 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
           .union(dataset.columnsToAnonymize
             .map(c => {
               df.schema(c.name).dataType match {
-                case StringType => if (c.columnType == "date") dateStringAnonymizer(lit(c.format)).alias(c.name) else stringAnonymizer(col(c.name)).alias(c.name)
+                case StringType => c.columnType match {
+                  case "date" => dateStringAnonymizer(col(c.name), lit(c.format.get))
+                  case _ => stringAnonymizer(col(c.name))
+                }
                 case ByteType => byteAnonymizer(col(c.name)).alias(c.name)
                 case ShortType => shortAnonymizer(col(c.name)).alias(c.name)
                 case IntegerType => intAnonymizer(col(c.name)).alias(c.name)

@@ -103,6 +103,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
                 case Some("TEXT_FILE") | Some("CSV") =>
                   TextFileHiveDataset(
                     ds.id,
+                    ds.name,
                     ds.columnsToAnonymize.getOrElse(List()).map(c => Column(c.name, c.`type`, c.format)),
                     FormatType.TEXTFILE,
                     ds.name,
@@ -117,6 +118,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
                 case Some("PARQUET") =>
                   ParquetHiveDataset(
                     ds.id,
+                    ds.name,
                     ds.columnsToAnonymize.get.map(c => Column(c.name, c.`type`, c.format)),
                     FormatType.PARQUET,
                     ds.name,
