@@ -138,6 +138,9 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     val anonymizeFloat = Right(spark.udf.register("anonymizeFloat", (f: Float) => AnonymizeNumeric.substituteFloat(f, errorAccumulator)))
     val anonymizeDouble = Right(spark.udf.register("anonymizeDouble", (d: Double) => AnonymizeNumeric.substituteDouble(d, errorAccumulator)))
     val anonymizeBigDecimal = Right(spark.udf.register("anonymize", (bd: BigDecimal) => AnonymizeNumeric.substituteBigDecimal(bd, errorAccumulator)))
+    val anonymizeDate = Right(spark.udf.register("anonymizeDate", () => AnonymizeDate.randomDate()))
+    val anonymizeTimestamp = Right(spark.udf.register("anonymizeTimestamp", () => AnonymizeDate.randomDate()))
+    val anonymizeDateString = Right(spark.udf.register("anonymizeDateString", (pattern: String) => AnonymizeDate.randomString(pattern)))
 
     if (anonymizeString.isRight) {
       val stringAnonymizer = anonymizeString.right.get
@@ -148,6 +151,9 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       val floatAnonymizer = anonymizeFloat.right.get
       val doubleAnonymizer = anonymizeDouble.right.get
       val bigDecimalAnonymizer = anonymizeBigDecimal.right.get
+      val dateAnonymizer = anonymizeDate.right.get
+      val timestampAnonymizer = anonymizeTimestamp.right.get
+      val dateStringAnonymizer = anonymizeDateString.right.get
 
       val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymize.map(_.name) contains c))
       val anodf = df.select(
@@ -155,7 +161,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
           .union(dataset.columnsToAnonymize
             .map(c => {
               df.schema(c.name).dataType match {
-                case StringType => stringAnonymizer(col(c.name)).alias(c.name)
+                case StringType => if (c.columnType == "date") dateStringAnonymizer(lit(c.format)).alias(c.name) else stringAnonymizer(col(c.name)).alias(c.name)
                 case ByteType => byteAnonymizer(col(c.name)).alias(c.name)
                 case ShortType => shortAnonymizer(col(c.name)).alias(c.name)
                 case IntegerType => intAnonymizer(col(c.name)).alias(c.name)
@@ -163,6 +169,8 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
                 case FloatType => floatAnonymizer(col(c.name)).alias(c.name)
                 case DoubleType => doubleAnonymizer(col(c.name)).alias(c.name)
                 case DecimalType() => bigDecimalAnonymizer(col(c.name)).alias(c.name)
+                case TimestampType => timestampAnonymizer().alias(c.name)
+                case DateType => dateAnonymizer().alias(c.name)
                 case _ => col(c.name).alias(c.name)
               }
             })
