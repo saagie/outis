@@ -115,7 +115,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       case None => to_date(col(dataset.entryDate.name))
     }
 
-    val condition = date_add(entryDate, dataset.entryDate.delay.get) > current_date()
+    val condition = date_add(entryDate, dataset.entryDate.delay.get) < current_date()
 
     val df: DataFrame = spark
       .sql(s"SELECT * FROM $database.$table")
