@@ -119,7 +119,6 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
     val df: DataFrame = spark
       .sql(s"SELECT * FROM $database.$table")
-      .where(condition)
 
     //TODO: Make this serializable
     /*    val anonymizeString = getStringAnonymization.right.map(method => spark.sqlContext.udf.register("anonymizeString",
@@ -150,7 +149,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       val doubleAnonymizer = anonymizeDouble.right.get
       val bigDecimalAnonymizer = anonymizeBigDecimal.right.get
 
-      val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymize contains c))
+      val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymize.map(_.name) contains c))
       val anodf = df.select(
         columnsNonAnonymized.map(c => col(c).alias(c))
           .union(dataset.columnsToAnonymize
@@ -168,6 +167,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
               }
             })
           ): _*)
+        .where(condition)
 
       val numberOfRowsProcessed = anodf.count() - errorAccumulator.value
       anodf.createOrReplaceTempView(sparkTmpTable)
