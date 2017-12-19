@@ -1,6 +1,7 @@
 package io.saagie.outis.core.job
 
 import java.lang.reflect.Method
+import java.sql.{Date, Timestamp}
 
 import com.databricks.spark.avro._
 import io.saagie.outis.core.anonymize.{AnonymizationException, AnonymizeDate, AnonymizeNumeric, AnonymizeString}
@@ -135,9 +136,9 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     val anonymizeFloat = Right(spark.udf.register("anonymizeFloat", (f: Float) => AnonymizeNumeric.substituteFloat(f, errorAccumulator)))
     val anonymizeDouble = Right(spark.udf.register("anonymizeDouble", (d: Double) => AnonymizeNumeric.substituteDouble(d, errorAccumulator)))
     val anonymizeBigDecimal = Right(spark.udf.register("anonymize", (bd: BigDecimal) => AnonymizeNumeric.substituteBigDecimal(bd, errorAccumulator)))
-    val anonymizeDate = Right(spark.udf.register("anonymizeDate", () => AnonymizeDate.randomDate()))
-    val anonymizeTimestamp = Right(spark.udf.register("anonymizeTimestamp", () => AnonymizeDate.randomDate()))
-    val anonymizeDateString = Right(spark.udf.register("anonymizeDateString", (pattern: String) => AnonymizeDate.randomString(pattern)))
+    val anonymizeDate = Right(spark.udf.register("anonymizeDate", (d: Date) => AnonymizeDate.randomDate(d)))
+    val anonymizeTimestamp = Right(spark.udf.register("anonymizeTimestamp", (d: Timestamp) => AnonymizeDate.randomTimestamp(d)))
+    val anonymizeDateString = Right(spark.udf.register("anonymizeDateString", (d: String, pattern: String) => AnonymizeDate.randomString(d, pattern)))
 
     if (anonymizeString.isRight) {
       val stringAnonymizer = anonymizeString.right.get

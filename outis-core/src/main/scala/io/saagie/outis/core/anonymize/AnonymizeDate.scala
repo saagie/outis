@@ -22,17 +22,26 @@ object AnonymizeDate {
     from.plusDays(random.nextInt(diff.toInt)) atTime(random.nextInt(hours), random.nextInt(minutes), random.nextInt(secondes))
   }
 
-  def randomDate(): Date = {
-    val time: LocalDateTime = generateLocalDateTime
-    Date.valueOf(time.toLocalDate)
+  def isEvenOption(n: Integer): Option[Boolean] = {
+    val num = Option(n).getOrElse(return None)
+    Some(num % 2 == 0)
   }
 
-  def randomTimestamp(): Timestamp = {
+  def randomDate(date: Date): Option[Date] = {
+    Option(date).getOrElse(return None)
     val time: LocalDateTime = generateLocalDateTime
-    Timestamp.valueOf(time)
+    Some(Date.valueOf(time.toLocalDate))
+
   }
 
-  def randomString(pattern: String): Option[String] = {
+  def randomTimestamp(date: Timestamp): Option[Timestamp] = {
+    Option(date).getOrElse(return None)
+    val time: LocalDateTime = generateLocalDateTime
+    Some(Timestamp.valueOf(time))
+  }
+
+  def randomString(date: String, pattern: String): Option[String] = {
+    Option(date).getOrElse(return None)
     val time: LocalDateTime = generateLocalDateTime
     val formatter = DateTimeFormatter.ofPattern(pattern)
     Try(time.format(formatter)).toOption
