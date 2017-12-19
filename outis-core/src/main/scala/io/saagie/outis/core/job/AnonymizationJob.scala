@@ -3,7 +3,7 @@ package io.saagie.outis.core.job
 import java.lang.reflect.Method
 
 import com.databricks.spark.avro._
-import io.saagie.outis.core.anonymize.{AnonymizationException, AnonymizeNumeric, AnonymizeString}
+import io.saagie.outis.core.anonymize.{AnonymizationException, AnonymizeDate, AnonymizeNumeric, AnonymizeString}
 import io.saagie.outis.core.model._
 import io.saagie.outis.core.util.HdfsUtils
 import org.apache.hadoop.fs.Path
