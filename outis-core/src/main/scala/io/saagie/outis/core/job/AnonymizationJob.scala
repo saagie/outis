@@ -46,10 +46,8 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       val anonymizedRows = spark.sparkContext.longAccumulator("anonymizedRows")
       val columnsNonAnonymised = df.columns.filter(c => !(dataset.columnsToAnonymize contains c))
       val tmpPath = dataset.hdfsUrl + "-tmp"
-      //val condition = df("")
 
       val numberOfRowsToProcess = df
-        //.where(condition)
         .count()
 
       val anodf = df.select(
@@ -60,7 +58,6 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             column
           })
           ): _*)
-      //.where(condition)
 
       val numberOfRowsProcessed = anodf.count()
 

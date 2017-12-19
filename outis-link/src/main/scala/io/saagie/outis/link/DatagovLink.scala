@@ -38,7 +38,7 @@ case class DatagovDataset(id: String,
                           name: String,
                           `type`: String,
                           delay: Int,
-                          entryDate: DatagovColumn,
+                          entryDate: Option[DatagovColumn],
                           columnsToAnonymize: Option[List[DatagovColumn]],
                           storageFormat: Option[String],
                           fieldDelimiter: Option[String],
@@ -107,7 +107,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
                     FormatType.TEXTFILE,
                     ds.name,
                     ds.serdeClass.get,
-                    Column(ds.entryDate.name, ds.entryDate.`type`, ds.entryDate.format, Some(ds.delay)),
+                    Column(ds.entryDate.get.name, ds.entryDate.get.`type`, ds.entryDate.get.format, Some(ds.delay)),
                     ds.fieldDelimiter.getOrElse("\u0001"),
                     ds.escapeDelimiter.getOrElse("\u0001"),
                     ds.lineDelimiter.getOrElse("\n"),
@@ -120,7 +120,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
                     ds.columnsToAnonymize.get.map(c => Column(c.name, c.`type`, c.format)),
                     FormatType.PARQUET,
                     ds.name,
-                    Column(ds.entryDate.name, ds.entryDate.`type`, ds.entryDate.format)
+                    Column(ds.entryDate.get.name, ds.entryDate.get.`type`, ds.entryDate.get.format, Some(ds.delay))
                   )
                 case _ =>
               }
