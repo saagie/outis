@@ -27,7 +27,6 @@ object AnonymizeDate {
     from.plusDays(random.nextInt(diff.toInt)) atTime(random.nextInt(hours), random.nextInt(minutes), random.nextInt(secondes))
   }
 
-
   def randomDate(date: Date, errorAccumulator: LongAccumulator): Date = {
     Try {
       val time: LocalDateTime = generateLocalDateTime
