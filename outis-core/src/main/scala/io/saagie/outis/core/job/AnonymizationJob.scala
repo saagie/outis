@@ -187,7 +187,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
         .union(
           df
             .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col):_*)
-            .where(not(condition) or entryDate isNull))
+            .where(not(condition) or col(dataset.entryDate.name) isNull))
 
       val numberOfRowsProcessed = anodf.count() - errorAccumulator.value
       anodf.createOrReplaceTempView(sparkTmpTable)
