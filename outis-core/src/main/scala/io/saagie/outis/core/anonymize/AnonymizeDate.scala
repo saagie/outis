@@ -27,10 +27,6 @@ object AnonymizeDate {
     from.plusDays(random.nextInt(diff.toInt)) atTime(random.nextInt(hours), random.nextInt(minutes), random.nextInt(secondes))
   }
 
-  def isEvenOption(n: Integer): Option[Boolean] = {
-    val num = Option(n).getOrElse(return None)
-    Some(num % 2 == 0)
-  }
 
   def randomDate(date: Date, errorAccumulator: LongAccumulator): Date = {
     Try {

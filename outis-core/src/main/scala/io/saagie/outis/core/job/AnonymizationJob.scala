@@ -167,8 +167,8 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             .map(c => {
               df.schema(c.name).dataType match {
                 case StringType => c.columnType match {
-                  case "date" => dateStringAnonymizer(col(c.name), lit(c.format.get))
-                  case _ => stringAnonymizer(col(c.name))
+                  case "date" => dateStringAnonymizer(col(c.name), lit(c.format.get)).alias(c.name)
+                  case _ => stringAnonymizer(col(c.name)).alias(c.name)
                 }
                 case ByteType => byteAnonymizer(col(c.name)).alias(c.name)
                 case ShortType => shortAnonymizer(col(c.name)).alias(c.name)
