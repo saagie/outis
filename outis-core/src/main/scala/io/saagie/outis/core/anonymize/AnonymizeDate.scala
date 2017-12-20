@@ -29,8 +29,12 @@ object AnonymizeDate {
 
   def randomDate(date: Date, errorAccumulator: LongAccumulator): Date = {
     Try {
-      val time: LocalDateTime = generateLocalDateTime
-      Date.valueOf(time.toLocalDate)
+      Option(date) match {
+        case Some(_) =>
+          val time: LocalDateTime = generateLocalDateTime
+          Date.valueOf(time.toLocalDate)
+        case None => date
+      }
     } match {
       case Success(d) => d
       case Failure(e) =>
@@ -42,8 +46,12 @@ object AnonymizeDate {
 
   def randomTimestamp(date: Timestamp, errorAccumulator: LongAccumulator): Timestamp = {
     Try {
-      val time: LocalDateTime = generateLocalDateTime
-      Timestamp.valueOf(time)
+      Option(date) match {
+        case Some(_) =>
+          val time: LocalDateTime = generateLocalDateTime
+          Timestamp.valueOf(time)
+        case None => date
+      }
     } match {
       case Success(d) => d
       case Failure(e) =>
@@ -55,9 +63,13 @@ object AnonymizeDate {
 
   def randomString(date: String, pattern: String, errorAccumulator: LongAccumulator): String = {
     Try {
-      val time: LocalDateTime = generateLocalDateTime
-      val formatter = DateTimeFormatter.ofPattern(pattern)
-      time.format(formatter)
+      Option(date) match {
+        case Some(_) =>
+          val time: LocalDateTime = generateLocalDateTime
+          val formatter = DateTimeFormatter.ofPattern(pattern)
+          time.format(formatter)
+        case None => date
+      }
     } match {
       case Success(d) => d
       case Failure(e) =>
