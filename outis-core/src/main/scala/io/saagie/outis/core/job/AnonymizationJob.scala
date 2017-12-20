@@ -186,7 +186,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
         .where(condition)
         .union(
           df
-            .select(df.columns.map(col):_*)
+            .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col):_*)
             .where(not(condition)))
 
       val numberOfRowsProcessed = anodf.count() - errorAccumulator.value
