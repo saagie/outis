@@ -184,13 +184,12 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             })
           ): _*)
         .where(condition)
-        .union(
-          df
-            .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col):_*)
-            .where(not(condition) or col(dataset.entryDate.name) isNull))
 
       val numberOfRowsProcessed = anodf.count() - errorAccumulator.value
-      anodf.createOrReplaceTempView(sparkTmpTable)
+      anodf.union(df
+        .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col): _*)
+        .where(col(dataset.entryDate.name).isNull or not(condition)))
+        .createOrReplaceTempView(sparkTmpTable)
 
       val options: String = dataset match {
         case d: TextFileHiveDataset => s"ROW FORMAT DELIMITED FIELDS TERMINATED BY '${d.fieldDelimiter}' ESCAPED BY '${d.escapeDelimiter}' LINES TERMINATED BY '${d.lineDelimiter}' STORED AS ${d.storageFormat.toString}"
