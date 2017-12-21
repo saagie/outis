@@ -116,14 +116,17 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
     val entryDate = dataset.entryDate.format match {
       case Some(f) =>
-        to_date(unix_timestamp(col(dataset.entryDate.name), f))
-      case None => to_date(col(dataset.entryDate.name))
+        to_date(date_format(col(dataset.entryDate.name), f))
+      case None =>
+        to_date(col(dataset.entryDate.name))
     }
 
     val condition = date_add(entryDate, dataset.entryDate.delay.get) < current_date()
 
-    val df: DataFrame = spark
+    val dfSelect: DataFrame = spark
       .sql(s"SELECT * FROM $database.$table")
+
+    val df = dfSelect.select(dfSelect.columns.map(col) :+ (monotonically_increasing_id() as "outis_ordering"): _*)
 
     //TODO: Make this serializable
     /*    val anonymizeString = getStringAnonymization.right.map(method => spark.sqlContext.udf.register("anonymizeString",
@@ -188,7 +191,8 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
       val numberOfRowsProcessed = anodf.count() - errorAccumulator.value
       anodf.union(df
         .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col): _*)
-        .where(col(dataset.entryDate.name).isNull or not(condition)))
+        .where(condition.isNull or not(condition)))
+        .orderBy($"outis_ordering")
         .createOrReplaceTempView(sparkTmpTable)
 
       val options: String = dataset match {
@@ -197,7 +201,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
         case _ => s"OPTIONS(fileFormat '${dataset.storageFormat.toString}')"
       }
 
-      val createTmpTable = s"CREATE TABLE $tmpTable $options AS SELECT ${df.columns.mkString(",")} FROM $sparkTmpTable"
+      val createTmpTable = s"CREATE TABLE $tmpTable $options AS SELECT ${dfSelect.columns.mkString(",")} FROM $sparkTmpTable"
       spark.sql(createTmpTable)
 
       val dropTable = s"DROP TABLE $database.$table"
