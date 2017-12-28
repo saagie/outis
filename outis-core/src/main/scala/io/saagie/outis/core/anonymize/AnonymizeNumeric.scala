@@ -10,7 +10,7 @@ import scala.util.{Failure, Random, Success, Try}
   */
 object AnonymizeNumeric {
 
-  val logger: Logger = Logger.getRootLogger
+  def logger: Logger = Logger.getRootLogger
 
   /**
     * Replace values with appropiate range.
@@ -39,7 +39,8 @@ object AnonymizeNumeric {
       case d: Double =>
         val range = maxValue(d, sign)
         replace(value, range, sign).toString
-      case bd: BigDecimal => replace(bd, bd.toString.map(_ => 9).mkString, sign)
+      case bd: BigDecimal =>
+        replace(bd, bd.toString.map(_ => 9).mkString, sign)
     }
   }
 

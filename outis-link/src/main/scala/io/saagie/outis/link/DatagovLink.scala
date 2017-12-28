@@ -133,7 +133,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
           _ != ((): Unit)
         }
         .asInstanceOf[List[DataSet]]
-      println(s"Datasets : $datasets")
+      log.info(s"Datasets: $datasets")
       Right(datasets)
     } else {
       Left(OutisLinkException(s"Error while retrieving datasets to anonymize: ${response.code()}, ${response.message()}"))
@@ -146,7 +146,6 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
   override def notifyDatasetProcessed(anonymizationResult: AnonymizationResult): Either[OutisLinkException, String] = {
     implicit val formats = Serialization.formats(NoTypeHints)
 
-
     val content = write(DatagovNotification(anonymizationResult))
     val body = RequestBody.create(JSON_MEDIA_TYPE, content)
 
@@ -156,8 +155,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
       _.name() == "XSRF-TOKEN"
     }.head
 
-    println(s"Token: $token")
-    println(s"Body: $content")
+    log.info(s"Token: $token, Body: $content")
 
     val request = new Request.Builder()
       .url(datagovNotificationUrl)

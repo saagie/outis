@@ -8,7 +8,7 @@ import scala.util.{Failure, Random, Success, Try}
 
 object AnonymizeString {
 
-  val logger: Logger = Logger.getRootLogger
+  def logger: Logger = Logger.getRootLogger
 
   val letters: immutable.IndexedSeq[Char] = ('a' to 'z') ++ ('A' to 'Z')
 

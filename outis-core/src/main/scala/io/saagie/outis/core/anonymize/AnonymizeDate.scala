@@ -13,7 +13,7 @@ import scala.util.{Failure, Random, Success, Try}
 
 object AnonymizeDate {
 
-  val logger: Logger = Logger.getRootLogger
+  def logger: Logger = Logger.getRootLogger
 
   val from: LocalDate = LocalDate.of(1920, 1, 1)
   val to: LocalDate = LocalDate.now()

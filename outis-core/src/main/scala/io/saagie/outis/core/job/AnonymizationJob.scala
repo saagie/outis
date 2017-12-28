@@ -1,35 +1,138 @@
 package io.saagie.outis.core.job
 
-import java.lang.reflect.Method
 import java.sql.{Date, Timestamp}
 
 import com.databricks.spark.avro._
-import io.saagie.outis.core.anonymize.{AnonymizationException, AnonymizeDate, AnonymizeNumeric, AnonymizeString}
+import io.saagie.outis.core.anonymize.AnonymizationException
 import io.saagie.outis.core.model._
 import io.saagie.outis.core.util.HdfsUtils
 import org.apache.hadoop.fs.Path
+import org.apache.log4j.Logger
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.util.LongAccumulator
 
-import scala.reflect.internal.util.ScalaClassLoader
+import scala.reflect.api.JavaUniverse
 import scala.util.{Failure, Success, Try}
 
 case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf())(implicit spark: SparkSession) {
 
+  def logger: Logger = Logger.getRootLogger
+
   import org.apache.spark.sql.functions.col
 
-  def anonymize(): Either[AnonymizationException, AnonymizationResult] = {
+  private def loadAnonymizer(anonymizerName: String): Either[AnonymizationException, () => JavaUniverse#MethodMirror] = {
     Try {
-      dataset match {
-        case d: HiveDataSet => anonymiseFromHive(d)
-        case d: HdfsDataSet => anonymizeFromHdfs(d)
-      }
+      () =>
+        lazy val ru = scala.reflect.runtime.universe
+        lazy val mirror = ru.runtimeMirror(getClass.getClassLoader)
+        lazy val name = outisConf.getClassFor(anonymizerName)
+        lazy val moduleMirror = mirror.reflectModule(mirror.staticClass(name).companion.asModule)
+        lazy val instanceMirror = mirror.reflect(moduleMirror.instance)
+        lazy val method = instanceMirror.symbol.toType.decl(ru.TermName(outisConf.getMethodFor(anonymizerName)))
+        instanceMirror.reflectMethod(method.asMethod).asInstanceOf[scala.reflect.api.JavaUniverse#MethodMirror]
     } match {
-      case Success(s) => s
-      case Failure(e) =>
-        Left(AnonymizationException(s"Impossible to anonymize dataset: ${dataset.identifier} : ${dataset.name}", e))
+      case Success(m) => Right(m)
+      case Failure(e) => Left(AnonymizationException(s"Impossible to load method: ${outisConf.getMethodFor(anonymizerName)}", e))
     }
+  }
+
+  private def createUdfs[T <: HiveDataSet](errorAccumulator: LongAccumulator, anonymizers: Map[String, Either[AnonymizationException, () => JavaUniverse#MethodMirror]]) = {
+    anonymizers
+      .map(t => (t._1, t._2.right.get))
+      //TODO: Replace with generic type
+      .map(t => {
+      (t._1, t._1 match {
+        case OutisConf.ANONYMIZER_STRING =>
+          spark.udf.register("anonymizeString", (s: String) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_STRING).map({
+              case ColumnValue => s
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[String]
+          })
+        case OutisConf.ANONYMIZER_BYTE =>
+          spark.udf.register("anonymizeByte", (b: String) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_BYTE).map({
+              case ColumnValue => b
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[Byte]
+          })
+        case OutisConf.ANONYMIZER_SHORT =>
+          spark.udf.register("anonymizeShort", (s: Short) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_BYTE).map({
+              case ColumnValue => s
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[Short]
+          })
+        case OutisConf.ANONYMIZER_INT =>
+          spark.udf.register("anonymizeInt", (i: Int) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_INT).map({
+              case ColumnValue => i
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[Int]
+          })
+        case OutisConf.ANONYMIZER_LONG =>
+          spark.udf.register("anonymizeLong", (l: Long) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_LONG).map({
+              case ColumnValue => l
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[Long]
+          })
+        case OutisConf.ANONYMIZER_FLOAT =>
+          spark.udf.register("anonymizeFloat", (f: Float) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_FLOAT).map({
+              case ColumnValue => f
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[Float]
+          })
+        case OutisConf.ANONYMIZER_DOUBLE =>
+          spark.udf.register("anonymizeDouble", (d: Double) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_DOUBLE).map({
+              case ColumnValue => d
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[Double]
+          })
+        case OutisConf.ANONYMIZER_BIGDECIMAL =>
+          spark.udf.register("anonymizeBigDecimal", (bd: BigDecimal) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_BIGDECIMAL).map({
+              case ColumnValue => bd
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[BigDecimal]
+          })
+        case OutisConf.ANONYMIZER_DATE =>
+          spark.udf.register("anonymizeDate", (d: Date) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_DATE).map({
+              case ColumnValue => d
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[Date]
+          })
+        case OutisConf.ANONYMIZER_TIMESTAMP =>
+          spark.udf.register("anonymizeTimestamp", (ts: Timestamp) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_TIMESTAMP).map({
+              case ColumnValue => ts
+              case x => x
+            }) :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[Timestamp]
+          })
+        case OutisConf.ANONYMIZER_DATE_STRING =>
+          spark.udf.register("anonymizeDateString", (s: String, pattern: String) => {
+            val params = outisConf.getParameters(OutisConf.ANONYMIZER_DATE_STRING).map({
+              case ColumnValue => s
+              case x => x
+            }) :+ pattern :+ errorAccumulator
+            t._2()(params: _*).asInstanceOf[String]
+          })
+      })
+    })
   }
 
   private def anonymizeFromHdfs[T <: HdfsDataSet](dataset: T): Either[AnonymizationException, AnonymizationResult] = {
@@ -81,22 +184,6 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
   }
 
   /**
-    * Loads anonymization string method.
-    *
-    * @return
-    */
-  private def getStringAnonymization: Either[AnonymizationException, Method] = {
-    ScalaClassLoader(getClass.getClassLoader).tryToLoadClass(outisConf.getClassFor(OutisConf.ANONYMIZER_STRING)) match {
-      case Some(x: Class[_]) =>
-        Try(x.getDeclaredMethod(outisConf.getMethodFor(OutisConf.ANONYMIZER_STRING), outisConf.getParameterClassesFor(OutisConf.ANONYMIZER_STRING): _*)) match {
-          case Success(m) => Right(m)
-          case Failure(e) => Left(AnonymizationException(s"Impossible to load method: ${outisConf.getMethodFor(OutisConf.ANONYMIZER_STRING)}", e))
-        }
-      case None => Left(AnonymizationException(s"Anonymization class not found: ${outisConf.getClassFor(OutisConf.ANONYMIZER_STRING)}"))
-    }
-  }
-
-  /**
     * Anonymize hive datasets.
     *
     * @param dataset The dataset to anonymize
@@ -128,41 +215,11 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
     val df = dfSelect.select(dfSelect.columns.map(col) :+ (monotonically_increasing_id() as "outis_ordering"): _*)
 
-    //TODO: Make this serializable
-    /*    val anonymizeString = getStringAnonymization.right.map(method => spark.sqlContext.udf.register("anonymizeString",
-          (s: String) =>
-            method.invoke(null, outisConf.getParameters(OutisConf.ANONYMIZER_STRING).map({
-              case ColumnValue => s
-              case x => x
-            }).asInstanceOf[Seq[Object]]: _*).asInstanceOf[String]
-        ))*/
     val errorAccumulator: LongAccumulator = spark.sparkContext.longAccumulator("errors")
 
-    val anonymizeString = Right(spark.udf.register("anonymizeString", (s: String) => AnonymizeString.substitute(s, errorAccumulator)))
-    val anonymizeByte = Right(spark.udf.register("anonymizeByte", (b: Byte) => AnonymizeNumeric.substituteByte(b, errorAccumulator)))
-    val anonymizeShort = Right(spark.udf.register("anonymizeShort", (s: Short) => AnonymizeNumeric.substituteShort(s, errorAccumulator)))
-    val anonymizeInt = Right(spark.udf.register("anonymizeInt", (i: Int) => AnonymizeNumeric.substituteInt(i, errorAccumulator)))
-    val anonymizeLong = Right(spark.udf.register("anonymizeLong", (l: Long) => AnonymizeNumeric.substituteLong(l, errorAccumulator)))
-    val anonymizeFloat = Right(spark.udf.register("anonymizeFloat", (f: Float) => AnonymizeNumeric.substituteFloat(f, errorAccumulator)))
-    val anonymizeDouble = Right(spark.udf.register("anonymizeDouble", (d: Double) => AnonymizeNumeric.substituteDouble(d, errorAccumulator)))
-    val anonymizeBigDecimal = Right(spark.udf.register("anonymize", (bd: BigDecimal) => AnonymizeNumeric.substituteBigDecimal(bd, errorAccumulator)))
-    val anonymizeDate = Right(spark.udf.register("anonymizeDate", (d: Date) => AnonymizeDate.randomDate(d, errorAccumulator)))
-    val anonymizeTimestamp = Right(spark.udf.register("anonymizeTimestamp", (d: Timestamp) => AnonymizeDate.randomTimestamp(d, errorAccumulator)))
-    val anonymizeDateString = Right(spark.udf.register("anonymizeDateString", (d: String, pattern: String) => AnonymizeDate.randomString(d, pattern, errorAccumulator)))
-
-    if (anonymizeString.isRight) {
-      val stringAnonymizer = anonymizeString.right.get
-      val byteAnonymizer = anonymizeByte.right.get
-      val shortAnonymizer = anonymizeShort.right.get
-      val intAnonymizer = anonymizeInt.right.get
-      val longAnonymizer = anonymizeLong.right.get
-      val floatAnonymizer = anonymizeFloat.right.get
-      val doubleAnonymizer = anonymizeDouble.right.get
-      val bigDecimalAnonymizer = anonymizeBigDecimal.right.get
-      val dateAnonymizer = anonymizeDate.right.get
-      val timestampAnonymizer = anonymizeTimestamp.right.get
-      val dateStringAnonymizer = anonymizeDateString.right.get
-
+    val anonymizers = outisConf.properties.keys.map(key => Map(key -> loadAnonymizer(key))).reduce(_ ++ _)
+    if (anonymizers.values.map(_.isRight).reduce(_ && _)) {
+      val udfs = createUdfs(errorAccumulator, anonymizers)
       val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymize.map(_.name) contains c))
       val anodf = df.select(
         columnsNonAnonymized.map(c => col(c).alias(c))
@@ -170,25 +227,26 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             .map(c => {
               df.schema(c.name).dataType match {
                 case StringType => c.columnType match {
-                  case "date" => dateStringAnonymizer(col(c.name), lit(c.format.get)).alias(c.name)
-                  case _ => stringAnonymizer(col(c.name)).alias(c.name)
+                  case "date" => udfs(OutisConf.ANONYMIZER_DATE_STRING)(col(c.name), lit(c.format.get)).alias(c.name)
+                  case _ => udfs(OutisConf.ANONYMIZER_STRING)(col(c.name)).alias(c.name)
                 }
-                case ByteType => byteAnonymizer(col(c.name)).alias(c.name)
-                case ShortType => shortAnonymizer(col(c.name)).alias(c.name)
-                case IntegerType => intAnonymizer(col(c.name)).alias(c.name)
-                case LongType => longAnonymizer(col(c.name)).alias(c.name)
-                case FloatType => floatAnonymizer(col(c.name)).alias(c.name)
-                case DoubleType => doubleAnonymizer(col(c.name)).alias(c.name)
-                case DecimalType() => bigDecimalAnonymizer(col(c.name)).alias(c.name)
-                case TimestampType => timestampAnonymizer().alias(c.name)
-                case DateType => dateAnonymizer().alias(c.name)
+                case ByteType => udfs(OutisConf.ANONYMIZER_BYTE)(col(c.name)).alias(c.name)
+                case ShortType => udfs(OutisConf.ANONYMIZER_SHORT)(col(c.name)).alias(c.name)
+                case IntegerType => udfs(OutisConf.ANONYMIZER_INT)(col(c.name)).alias(c.name)
+                case LongType => udfs(OutisConf.ANONYMIZER_LONG)(col(c.name)).alias(c.name)
+                case FloatType => udfs(OutisConf.ANONYMIZER_FLOAT)(col(c.name)).alias(c.name)
+                case DoubleType => udfs(OutisConf.ANONYMIZER_DOUBLE)(col(c.name)).alias(c.name)
+                case DecimalType() => udfs(OutisConf.ANONYMIZER_BIGDECIMAL)(col(c.name)).alias(c.name)
+                case DateType => udfs(OutisConf.ANONYMIZER_DATE)(col(c.name)).alias(c.name)
+                case TimestampType => udfs(OutisConf.ANONYMIZER_TIMESTAMP)(col(c.name)).alias(c.name)
                 case _ => col(c.name).alias(c.name)
               }
             })
           ): _*)
         .where(condition)
 
-      val numberOfRowsProcessed = anodf.count() - errorAccumulator.value
+      val numberOfRowsProcessed = anodf.count()
+
       anodf.union(df
         .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col): _*)
         .where(condition.isNull or not(condition)))
@@ -211,7 +269,27 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
       Right(AnonymizationResult(dataset, numberOfRowsProcessed, System.currentTimeMillis() - start, errorAccumulator.value))
     } else {
-      Left(AnonymizationException("Anonymization not present"))
+      anonymizers
+        .filter(_._2.isLeft)
+        .foreach(t => {
+          t._2
+            .left
+            .foreach(logger.error(s"Unable to load Anonymizer: ${t._1}", _))
+        })
+      Left(AnonymizationException("Problem with anonymizer method(s)"))
+    }
+  }
+
+  def anonymize(): Either[AnonymizationException, AnonymizationResult] = {
+    Try {
+      dataset match {
+        case d: HiveDataSet => anonymiseFromHive(d)
+        case d: HdfsDataSet => anonymizeFromHdfs(d)
+      }
+    } match {
+      case Success(s) => s
+      case Failure(e) =>
+        Left(AnonymizationException(s"Impossible to anonymize dataset: ${dataset.identifier} : ${dataset.name}", e))
     }
   }
 }
