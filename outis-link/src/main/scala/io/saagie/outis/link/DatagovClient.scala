@@ -57,7 +57,6 @@ object DatagovClient extends App {
       .config("spark.eventLog.enabled", "true")
       .enableHiveSupport()
       .getOrCreate()
-    sparkSession.sparkContext.setLogLevel("ERROR")
     SparkProgram(link).launchAnonymisation()
     sparkSession.stop()
   }
