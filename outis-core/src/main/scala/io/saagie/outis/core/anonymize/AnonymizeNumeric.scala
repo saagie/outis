@@ -83,7 +83,7 @@ object AnonymizeNumeric {
     */
   def replace(value: Any, range: Any, sign: Boolean): String = {
     var cpt = 0
-    s"${if (!sign) "-"}${
+    s"${if (!sign) "-" else ""}${
       Math.abs(value.toString.toLong).toString.map { _ =>
         cpt = cpt + 1
         Random.nextInt(range.toString.charAt(cpt).toInt + 1)
