@@ -203,7 +203,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
     val entryDate = dataset.entryDate.format match {
       case Some(f) =>
-        to_date(date_format(col(dataset.entryDate.name), f))
+        to_date(from_unixtime(unix_timestamp(col(dataset.entryDate.name), f)))
       case None =>
         to_date(col(dataset.entryDate.name))
     }
