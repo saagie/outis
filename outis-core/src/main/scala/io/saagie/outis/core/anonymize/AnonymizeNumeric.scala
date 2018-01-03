@@ -40,7 +40,7 @@ object AnonymizeNumeric {
         val range = maxValue(d, sign)
         replace(value, range, sign).toString
       case bd: BigDecimal =>
-        replace(bd, bd.toString.map(_ => 9).mkString, sign)
+        replace(bd, BigDecimal(bd.toString.map(_ => 9).mkString), sign)
     }
   }
 
@@ -51,25 +51,40 @@ object AnonymizeNumeric {
     * @param sign  The sign that will be used to generate new value.
     * @return The new value.
     */
-  def maxValue(value: AnyVal, sign: Boolean): AnyVal = {
+  def maxValue(value: AnyVal, sign: Boolean): BigDecimal = {
     if (sign) {
-      value match {
+      BigDecimal(value match {
         case _: Byte => Byte.MaxValue
         case _: Short => Short.MaxValue
         case _: Int => Int.MaxValue
         case _: Long => Long.MaxValue
         case _: Float => Float.MaxValue
         case _: Double => Double.MaxValue
+      })
+    } else {
+      BigDecimal(value match {
+        case _: Byte => Byte.MinValue
+        case _: Short => Short.MinValue
+        case _: Int => Int.MinValue
+        case _: Long => Long.MinValue
+        case _: Float => Float.MinValue
+        case _: Double => Double.MinValue
+      }) * -1
+    }
+  }
+
+  def absValue(value: Any): Any = {
+    if (value.toString.charAt(0) == '-') {
+      value match {
+        case b: Byte => (-1 * b).toByte
+        case s: Short => (-1 * s).toShort
+        case i: Int => -1 * i
+        case l: Long => -1 * l
+        case f: Float => -1 * f
+        case d: Double => -1 * d
       }
     } else {
-      (value match {
-        case _: Byte => Byte.MaxValue
-        case _: Short => Short.MaxValue
-        case _: Int => Int.MaxValue
-        case _: Long => Long.MaxValue
-        case _: Float => Float.MaxValue
-        case _: Double => Double.MaxValue
-      }) * -1
+      value
     }
   }
 
@@ -81,18 +96,22 @@ object AnonymizeNumeric {
     * @param sign  The sign of the generated value.
     * @return String representation of the value.
     */
-  def replace(value: Any, range: Any, sign: Boolean): String = {
+  def replace(value: Any, range: BigDecimal, sign: Boolean): String = {
     var cpt = 0
     s"${if (!sign) "-" else ""}${
-      Math.abs(value.toString.toDouble).toString.map {
-        case '.' => "."
-        case _ =>
+      absValue(value).toString.map {
+        case '.' =>
           cpt = cpt + 1
-          Random.nextInt(range.toString.charAt(cpt).toInt + 1)
+          '.'
+        case _ =>
+          val rngStr = range.bigDecimal.toPlainString
+          val i = rngStr.charAt(cpt).toString.toInt + 1
+          val v = Random.nextInt(i)
+          cpt = cpt + 1
+          v
       }.mkString
     }"
   }
-
 
   /**
     * Substitute a Byte value.

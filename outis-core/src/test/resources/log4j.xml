@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+    <appender name="console" class="org.apache.log4j.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{yy/MM/dd HH:mm:ss.SS} %p %c{1}: %m%n"/>
+        </layout>
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="levelMin" value="TRACE"/>
+            <param name="levelMax" value="INFO"/>
+        </filter>
+    </appender>
+    <appender name="console-err" class="org.apache.log4j.ConsoleAppender">
+        <param name="Target" value="System.err"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{yy/MM/dd HH:mm:ss.SS} %p %c{1}: %m%n"/>
+        </layout>
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="levelMin" value="ERROR"/>
+        </filter>
+    </appender>
+    <logger name="org.apache.spark">
+        <level value="error"/>
+    </logger>
+    <logger name="akka.event.slf4j">
+        <level value="WARN"/>
+    </logger>
+    <logger name="org.spark-project.jetty.util.component.AbstractLifeCycle">
+        <level value="WARN"/>
+    </logger>
+    <logger name="org.apache.spark.repl.SparkIMain$exprTyper">
+        <level value="WARN"/>
+    </logger>
+    <logger name="org.apache.spark.repl.SparkILoop$SparkILoopInterpreter">
+        <level value="WARN"/>
+    </logger>
+    <logger name="org.apache.parquet">
+        <level value="WARN"/>
+    </logger>
+    <logger name="parquet">
+        <level value="WARN"/>
+    </logger>
+    <logger name="org.apache.hadoop">
+        <level value="ERROR"/>
+    </logger>
+    <logger name="org.apache.hadoop.hive.metastore.HiveMetaStoreClient">
+        <level value="ERROR"/>
+    </logger>
+    <logger name="org.apache.hadoop.hive.metastore.RetryingHMSHandler">
+        <level value="ERROR"/>
+    </logger>
+    <logger name="hive.ql.metadata.Hive">
+        <level value="ERROR"/>
+    </logger>
+    <logger name="org.apache.hadoop.hive.ql.exec.FunctionRegistry">
+        <level value="ERROR"/>
+    </logger>
+    <logger name="org.spark_project.jetty">
+        <level value="WARN"/>
+    </logger>
+
+    <root>
+        <priority value="INFO"/>
+        <appender-ref ref="console"/>
+        <appender-ref ref="console-err"/>
+    </root>
+</log4j:configuration>

@@ -55,6 +55,7 @@ object DatagovClient extends App {
       .config("hive.metastore.warehouse.dir", "hdfs://cluster/user/hive/warehouse")
       .config("spark.eventLog.dir", "hdfs://cluster/tmp/spark-events")
       .config("spark.eventLog.enabled", "true")
+      .config("spark.executor.extraJavaOptions", "-Dlog4j.configuration=log4j.xml")
       .enableHiveSupport()
       .getOrCreate()
     SparkProgram(link).launchAnonymisation()
