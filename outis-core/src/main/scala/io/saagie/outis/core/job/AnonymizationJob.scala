@@ -52,7 +52,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             t._2()(params: _*).asInstanceOf[String]
           })
         case OutisConf.ANONYMIZER_BYTE =>
-          spark.udf.register("anonymizeByte", (b: String) => {
+          spark.udf.register("anonymizeByte", (b: Byte) => {
             val params = outisConf.getParameters(OutisConf.ANONYMIZER_BYTE).map({
               case ColumnValue => b
               case x => x
@@ -100,12 +100,12 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
             t._2()(params: _*).asInstanceOf[Double]
           })
         case OutisConf.ANONYMIZER_BIGDECIMAL =>
-          spark.udf.register("anonymizeBigDecimal", (bd: BigDecimal) => {
+          spark.udf.register("anonymizeBigDecimal", (bd: java.math.BigDecimal) => {
             val params = outisConf.getParameters(OutisConf.ANONYMIZER_BIGDECIMAL).map({
               case ColumnValue => bd
               case x => x
             }) :+ errorAccumulator
-            t._2()(params: _*).asInstanceOf[BigDecimal]
+            t._2()(params: _*).asInstanceOf[java.math.BigDecimal]
           })
         case OutisConf.ANONYMIZER_DATE =>
           spark.udf.register("anonymizeDate", (d: Date) => {
@@ -208,7 +208,7 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
         to_date(col(dataset.entryDate.name))
     }
 
-    val condition = date_add(entryDate, dataset.entryDate.delay.get) < current_date()
+    val condition = date_add(entryDate, dataset.entryDate.delay.get) <= current_date()
 
     val dfSelect: DataFrame = spark
       .sql(s"SELECT * FROM $database.$table")
@@ -220,10 +220,16 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
     val anonymizers = outisConf.properties.keys.map(key => Map(key -> loadAnonymizer(key))).reduce(_ ++ _)
     if (anonymizers.values.map(_.isRight).reduce(_ && _)) {
       val udfs = createUdfs(errorAccumulator, anonymizers)
-      val columnsNonAnonymized = df.columns.filter(c => !(dataset.columnsToAnonymize.map(_.name) contains c))
+      val columnsToAnonymiseSet = dataset.columnsToAnonymize.map(_.name)
+      val columnsNonAnonymized = df
+        .columns
+        .filter(c => !(columnsToAnonymiseSet contains c))
+
       val anodf = df.select(
-        columnsNonAnonymized.map(c => col(c).alias(c))
-          .union(dataset.columnsToAnonymize
+        columnsNonAnonymized
+          .map(c => col(c).alias(c))
+          .union(dataset
+            .columnsToAnonymize
             .map(c => {
               df.schema(c.name).dataType match {
                 case StringType => c.columnType match {
@@ -247,9 +253,10 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
       val numberOfRowsProcessed = anodf.count()
 
-      anodf.union(df
-        .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col): _*)
-        .where(condition.isNull or not(condition)))
+      anodf
+        .union(df
+          .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col): _*)
+          .where(condition.isNull or not(condition)))
         .orderBy($"outis_ordering")
         .createOrReplaceTempView(sparkTmpTable)
 

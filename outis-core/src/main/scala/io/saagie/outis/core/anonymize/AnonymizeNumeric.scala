@@ -1,5 +1,7 @@
 package io.saagie.outis.core.anonymize
 
+import java.nio.ByteBuffer
+
 import org.apache.log4j.Logger
 import org.apache.spark.util.LongAccumulator
 
@@ -12,35 +14,30 @@ object AnonymizeNumeric {
 
   def logger: Logger = Logger.getRootLogger
 
-  /**
-    * Replace values with appropiate range.
-    *
-    * @param value the value to replace.
-    * @return The new value to String format.
-    */
-  def substituteValue(value: Any): String = {
+  def substituteValue[T](value: T): T = {
     val sign = Random.nextBoolean()
     value match {
       case b: Byte =>
-        val range = maxValue(b, sign)
-        replace(value, range, sign).toString
+        val range = maxValue(b, sign).toInt
+        (b ^ Random.nextInt(range)).toByte.asInstanceOf[T]
       case s: Short =>
-        val range = maxValue(s, sign)
-        replace(value, range, sign).toString
-      case i: Int => Random.nextInt()
-        val range = maxValue(i, sign)
-        replace(value, range, sign).toString
+        val range = maxValue(s, sign).toInt
+        (s ^ Random.nextInt(range)).toShort.asInstanceOf[T]
+      case i: Int =>
+        val range = maxValue(i, sign).toInt
+        (i ^ Random.nextInt(range)).asInstanceOf[T]
       case l: Long =>
-        val range = maxValue(l, sign)
-        replace(value, range, sign).toString
+        (l ^ Random.nextLong()).asInstanceOf[T]
       case f: Float =>
-        val range = maxValue(f, sign)
-        replace(value, range, sign).toString
+        val range = maxValue(1.toByte, sign).toInt
+        val bytes = ByteBuffer.allocate(4).putFloat(f).array().map(_ ^ Random.nextInt(range) toByte)
+        ByteBuffer.wrap(bytes).getFloat.asInstanceOf[T]
       case d: Double =>
-        val range = maxValue(d, sign)
-        replace(value, range, sign).toString
-      case bd: BigDecimal =>
-        replace(bd, BigDecimal(bd.toString.map(_ => 9).mkString), sign)
+        val range = maxValue(1.toByte, sign).toInt
+        val bytes = ByteBuffer.allocate(8).putDouble(d).array().map(_ ^ Random.nextInt(range) toByte)
+        ByteBuffer.wrap(bytes).getDouble.asInstanceOf[T]
+      case bd: java.math.BigDecimal =>
+        BigDecimal(Random.nextDouble()).bigDecimal.asInstanceOf[T]
     }
   }
 
@@ -52,25 +49,14 @@ object AnonymizeNumeric {
     * @return The new value.
     */
   def maxValue(value: AnyVal, sign: Boolean): BigDecimal = {
-    if (sign) {
-      BigDecimal(value match {
-        case _: Byte => Byte.MaxValue
-        case _: Short => Short.MaxValue
-        case _: Int => Int.MaxValue
-        case _: Long => Long.MaxValue
-        case _: Float => Float.MaxValue
-        case _: Double => Double.MaxValue
-      })
-    } else {
-      BigDecimal(value match {
-        case _: Byte => Byte.MinValue
-        case _: Short => Short.MinValue
-        case _: Int => Int.MinValue
-        case _: Long => Long.MinValue
-        case _: Float => Float.MinValue
-        case _: Double => Double.MinValue
-      }) * -1
-    }
+    BigDecimal(value match {
+      case _: Byte => Byte.MaxValue
+      case _: Short => Short.MaxValue
+      case _: Int => Int.MaxValue
+      case _: Long => Long.MaxValue
+      case _: Float => Float.MaxValue
+      case _: Double => Double.MaxValue
+    })
   }
 
   def absValue(value: Any): Any = {
@@ -82,35 +68,11 @@ object AnonymizeNumeric {
         case l: Long => -1 * l
         case f: Float => -1 * f
         case d: Double => -1 * d
+        case bd: BigDecimal => -1 * bd
       }
     } else {
       value
     }
-  }
-
-  /**
-    * Replace value's digits.
-    *
-    * @param value the value to replace.
-    * @param range The range of the value.
-    * @param sign  The sign of the generated value.
-    * @return String representation of the value.
-    */
-  def replace(value: Any, range: BigDecimal, sign: Boolean): String = {
-    var cpt = 0
-    s"${if (!sign) "-" else ""}${
-      absValue(value).toString.map {
-        case '.' =>
-          cpt = cpt + 1
-          '.'
-        case _ =>
-          val rngStr = range.bigDecimal.toPlainString
-          val i = rngStr.charAt(cpt).toString.toInt + 1
-          val v = Random.nextInt(i)
-          cpt = cpt + 1
-          v
-      }.mkString
-    }"
   }
 
   /**
@@ -122,7 +84,7 @@ object AnonymizeNumeric {
     */
   def substituteByte(b: Byte, errorAccumulator: LongAccumulator): Byte = {
     Try {
-      substituteValue(b).toByte
+      substituteValue(b)
     } match {
       case Success(value) => value
       case Failure(e) =>
@@ -141,7 +103,7 @@ object AnonymizeNumeric {
     */
   def substituteShort(s: Short, errorAccumulator: LongAccumulator): Short = {
     Try {
-      substituteValue(s).toShort
+      substituteValue(s)
     } match {
       case Success(value) => value
       case Failure(e) =>
@@ -160,7 +122,7 @@ object AnonymizeNumeric {
     */
   def substituteInt(i: Integer, errorAccumulator: LongAccumulator): Int = {
     Try {
-      substituteValue(i).toInt
+      substituteValue(i)
     } match {
       case Success(value) => value
       case Failure(e) =>
@@ -179,7 +141,7 @@ object AnonymizeNumeric {
     */
   def substituteLong(l: Long, errorAccumulator: LongAccumulator): Long = {
     Try {
-      substituteValue(l).toLong
+      substituteValue(l)
     } match {
       case Success(value) => value
       case Failure(e) =>
@@ -198,7 +160,7 @@ object AnonymizeNumeric {
     */
   def substituteFloat(f: Float, errorAccumulator: LongAccumulator): Float = {
     Try {
-      substituteValue(f).toFloat
+      substituteValue(f)
     } match {
       case Success(value) => value
       case Failure(e) =>
@@ -217,7 +179,7 @@ object AnonymizeNumeric {
     */
   def substituteDouble(d: Double, errorAccumulator: LongAccumulator): Double = {
     Try {
-      substituteValue(d).toDouble
+      substituteValue(d)
     } match {
       case Success(value) => value
       case Failure(e) =>
@@ -234,13 +196,14 @@ object AnonymizeNumeric {
     * @param errorAccumulator
     * @return
     */
-  def substituteBigDecimal(bd: BigDecimal, errorAccumulator: LongAccumulator): BigDecimal = {
+  def substituteBigDecimal(bd: java.math.BigDecimal, errorAccumulator: LongAccumulator): java.math.BigDecimal = {
+    //TODO: Totally wrecked
     Try {
-      BigDecimal(substituteValue(bd))
+      substituteValue(bd)
     } match {
       case Success(value) => value
       case Failure(e) =>
-        logger.error(s"Impossible to process column value ${bd.toString()}", e)
+        logger.error(s"Impossible to process column value $bd", e)
         errorAccumulator.add(1)
         bd
     }
