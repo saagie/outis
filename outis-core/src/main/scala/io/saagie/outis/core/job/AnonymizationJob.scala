@@ -210,10 +210,13 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
 
     val condition = date_add(entryDate, dataset.entryDate.delay.get) <= current_date()
 
-    val dfSelect: DataFrame = spark
-      .sql(s"SELECT * FROM $database.$table")
+    val dfSelect = spark
+      .table(dataset.table)
+    val partitions = dfSelect.rdd.getNumPartitions
 
-    val df = dfSelect.select(dfSelect.columns.map(col) :+ (monotonically_increasing_id() as "outis_ordering"): _*)
+    logger.info(s"Dataset: $dataset")
+    val df = dfSelect
+      .select(dfSelect.columns.map(col) :+ (monotonically_increasing_id() as "outis_ordering") :+ (input_file_name() as "outis_file_name"): _*)
 
     val errorAccumulator: LongAccumulator = spark.sparkContext.longAccumulator("errors")
 
@@ -258,16 +261,21 @@ case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf()
           .select(columnsNonAnonymized.union(dataset.columnsToAnonymize.map(_.name)).map(col): _*)
           .where(condition.isNull or not(condition)))
         .orderBy($"outis_ordering")
-        .createOrReplaceTempView(sparkTmpTable)
+        .repartition(partitions)
+        .createTempView(sparkTmpTable)
 
-      val options: String = dataset match {
-        case d: TextFileHiveDataset => s"ROW FORMAT DELIMITED FIELDS TERMINATED BY '${d.fieldDelimiter}' ESCAPED BY '${d.escapeDelimiter}' LINES TERMINATED BY '${d.lineDelimiter}' STORED AS ${d.storageFormat.toString}"
-        case d: ParquetHiveDataset => s"STORED AS ${d.storageFormat.toString}"
-        case _ => s"OPTIONS(fileFormat '${dataset.storageFormat.toString}')"
+      val options = dataset match {
+        case d: TextFileHiveDataset =>
+          s"ROW FORMAT DELIMITED FIELDS TERMINATED BY '${d.fieldDelimiter}' ESCAPED BY '${d.escapeDelimiter}' LINES TERMINATED BY '${d.lineDelimiter}' STORED AS ${d.storageFormat.toString}"
+        case d: ParquetHiveDataset =>
+          spark
+            .sql(s"SET spark.sql.parquet.mergeSchema=${d.mergeSchema}")
+          s"STORED AS PARQUET"
+        case _ => s"STORED AS ${dataset.storageFormat}"
       }
 
-      val createTmpTable = s"CREATE TABLE $tmpTable $options AS SELECT ${dfSelect.columns.mkString(",")} FROM $sparkTmpTable"
-      spark.sql(createTmpTable)
+      spark
+        .sql(s"CREATE TABLE $tmpTable $options AS (SELECT ${dfSelect.columns.mkString(",")} FROM $sparkTmpTable)")
 
       val dropTable = s"DROP TABLE $database.$table"
       spark.sql(dropTable)

@@ -13,28 +13,40 @@ case class ManualLink() extends OutisLink {
     * @return
     */
   override def datasetsToAnonimyze(): Either[OutisLinkException, List[DataSet]] = {
-    Right(List(TextFileHiveDataset(
+    Right(List(ParquetHiveDataset(
       "0",
       "anonymization.table",
       List(
-        Column("name", "string", None),
-        Column("byte_value", "byte", None),
-        Column("short_value", "short", None),
-        Column("int_value", "int", None),
-        Column("long_value", "long", None),
-        Column("float_value", "float", None),
-        Column("double_value", "double", None),
-        Column("decimal_value", "decimal"),
-        Column("timestamp_value", "date", None),
-        Column("date_value", "date", None),
+        Column("name", "string"),
+        Column("byte_value", "byte"),
+        Column("short_value", "short"),
+        Column("int_value", "int"),
+        Column("long_value", "long"),
+        Column("float_value", "float"),
+        Column("double_value", "double"),
+//        Column("decimal_value", "decimal"),
+        Column("timestamp_value", "timestamp"),
+//        Column("date_value", "date"),
         Column("date_string_value", "date", Some("yyyy-MM-dd"))),
-      FormatType.TEXTFILE,
+      FormatType.PARQUET,
       "anonymization.test_table",
-      "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
-      Column("creation_date", "date", None, Some(-1)),
-      "\u0001",
-      "\u0001"
-    )))
+      Column("creation_date", "date", None, Some(-1))
+    ),
+      TextFileHiveDataset(
+        "1",
+        "anonymization.test_time",
+        List(
+          Column("time", "double"),
+          Column("comment", "string"),
+          Column("user_id", "bigint")
+        ),
+        FormatType.TEXTFILE,
+        "anonymization.test_time",
+        "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
+        Column("date", "date", Some("yyyy-MM-dd HH:mm:ss.SSS"), Some(-1)),
+        "\u0001",
+        "\u0001"
+      )))
   }
 
   /**

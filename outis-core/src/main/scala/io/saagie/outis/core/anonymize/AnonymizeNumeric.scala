@@ -30,11 +30,11 @@ object AnonymizeNumeric {
         (l ^ Random.nextLong()).asInstanceOf[T]
       case f: Float =>
         val range = maxValue(1.toByte, sign).toInt
-        val bytes = ByteBuffer.allocate(4).putFloat(f).array().map(_ ^ Random.nextInt(range) toByte)
+        val bytes = ByteBuffer.allocate(4).putFloat(f).array().map(v => (v ^ Random.nextInt(range).toByte).toByte)
         ByteBuffer.wrap(bytes).getFloat.asInstanceOf[T]
       case d: Double =>
         val range = maxValue(1.toByte, sign).toInt
-        val bytes = ByteBuffer.allocate(8).putDouble(d).array().map(_ ^ Random.nextInt(range) toByte)
+        val bytes = ByteBuffer.allocate(4).putDouble(d).array().map(v => (v ^ Random.nextInt(range).toByte).toByte)
         ByteBuffer.wrap(bytes).getDouble.asInstanceOf[T]
       case bd: java.math.BigDecimal =>
         BigDecimal(Random.nextDouble()).bigDecimal.asInstanceOf[T]

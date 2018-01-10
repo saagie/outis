@@ -1,7 +1,5 @@
 package io.saagie.outis.link
 
-import java.net.{CookieManager, CookiePolicy}
-
 import io.saagie.outis.core.job.AnonymizationResult
 import io.saagie.outis.core.model._
 import okhttp3._
@@ -71,9 +69,7 @@ object DatagovNotification {
 
 case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) extends OutisLink {
   val log: Logger = Logger.getRootLogger
-  val cookieManager: CookieManager = new CookieManager()
-  cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL)
-  val okHttpClient: OkHttpClient = new OkHttpClient.Builder().cookieJar(new JavaNetCookieJar(cookieManager)).build()
+  val okHttpClient: OkHttpClient = new OkHttpClient.Builder().build()
 
   import DatagovLink.JSON_MEDIA_TYPE
 
@@ -149,17 +145,10 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
     val content = write(DatagovNotification(anonymizationResult))
     val body = RequestBody.create(JSON_MEDIA_TYPE, content)
 
-    //Cookie management...
-    import scala.collection.JavaConversions._
-    val token = okHttpClient.cookieJar().loadForRequest(HttpUrl.parse(datagovNotificationUrl)).filter {
-      _.name() == "XSRF-TOKEN"
-    }.head
-
-    log.info(s"Token: $token, Body: $content")
+    log.info(s"Body: $content")
 
     val request = new Request.Builder()
       .url(datagovNotificationUrl)
-      .header(s"X-${token.name()}", token.value())
       .put(body)
       .build()
 
