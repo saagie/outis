@@ -10,7 +10,6 @@ object ManualClient extends App {
     implicit val sparkSession: SparkSession = SparkSession
       .builder()
       .appName("Manual Anonymization")
-      .master("local[*]")
       .config("hive.metastore.warehouse.dir", "hdfs://cluster/user/hive/warehouse")
       .config("spark.eventLog.dir", "hdfs://cluster/tmp/spark-events")
       .config("spark.eventLog.enabled", "true")
