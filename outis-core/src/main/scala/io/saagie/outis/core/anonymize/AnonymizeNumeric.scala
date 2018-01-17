@@ -1,5 +1,6 @@
 package io.saagie.outis.core.anonymize
 
+import java.math.MathContext
 import java.nio.ByteBuffer
 
 import org.apache.log4j.Logger
@@ -29,9 +30,9 @@ object AnonymizeNumeric {
       case l: Long =>
         (l ^ Random.nextLong()).asInstanceOf[T]
       case f: Float =>
-//        val range = maxValue(1.toByte, sign).toInt
-//        val bytes = ByteBuffer.allocate(4).putFloat(f).array().map(v => (v ^ Random.nextInt(range).toByte).toByte)
-//        ByteBuffer.wrap(bytes).getFloat.asInstanceOf[T]
+        //        val range = maxValue(1.toByte, sign).toInt
+        //        val bytes = ByteBuffer.allocate(4).putFloat(f).array().map(v => (v ^ Random.nextInt(range).toByte).toByte)
+        //        ByteBuffer.wrap(bytes).getFloat.asInstanceOf[T]
         Random.nextFloat().asInstanceOf[T]
       case d: Double =>
         val range = maxValue(1.toByte, sign).toInt
@@ -39,7 +40,7 @@ object AnonymizeNumeric {
         ByteBuffer.wrap(bytes).getDouble.asInstanceOf[T]
         Random.nextDouble().asInstanceOf[T]
       case bd: java.math.BigDecimal =>
-        BigDecimal(Random.nextDouble()).bigDecimal.asInstanceOf[T]
+        BigDecimal(Random.nextDouble(), new MathContext(bd.precision())).bigDecimal.asInstanceOf[T]
     }
   }
 
