@@ -1,0 +1,50 @@
+language: scala
+
+branches:
+  except:
+    - /^\\d+\\.\\d+\\.\\d+/
+
+jdk:
+  - oraclejdk8
+
+cache:
+  directories:
+    - "$HOME/.m2"
+    - "$HOME/.ivy2"
+    - "$HOME/.gradle/caches/"
+    - "$HOME/.gradle/wrapper/"
+
+before_install:
+  - git config --global user.email ""
+  - git config --global user.name "Travis"
+  - git remote set-url origin git@github.com:saagie/outis.git
+  - git config remote.origin.fetch refs/heads/*:refs/remotes/origin/*
+  - openssl aes-256-cbc -K $encrypted_837e0722fe3d_key -iv $encrypted_837e0722fe3d_iv -in keys.tar.enc -out keys.tar -d
+  - tar xvf keys.tar
+  - mv id_rsa_travis ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - echo signing.password=$gpg_pass >> ~/.gradle/gradle.properties
+  - echo nexusName=$SONATYPE_USERNAME >> ~/.gradle/gradle.properties
+  - echo nexusPassword=$SONATYPE_PASSWORD >> ~/.gradle/gradle.properties
+  - echo gradle.publish.key=$GRADLE_PUBLISH_KEY >> ~/.gradle/gradle.properties
+  - echo gradle.publish.secret=$GRADLE_PUBLISH_SECRET >> ~/.gradle/gradle.properties
+  - wget https://services.gradle.org/distributions/gradle-4.4.1-bin.zip
+  - unzip gradle-4.4.1-bin.zip
+  - export GRADLE_HOME=$PWD/gradle-4.4.1
+  - export PATH=$GRADLE_HOME/bin:$PATH
+
+script:
+  - gradle test --stacktrace
+  - if [ ${TRAVIS_BRANCH} = "master" ]; then
+      #git checkout master;
+      #git release -Prelease.useAutomaticVersion=true --stacktrace;
+      #gradle closeAndReleaseRepository;
+      gradle build
+    else
+      #gradle uploadArchive --stacktrace;
+      gradle shadowJar
+    fi
+
+after_failure:
+  - git status
+  - git diff

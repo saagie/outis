@@ -54,6 +54,12 @@ gradle-app.setting
 out/
 .idea/
 *.iml
+secring.gpg
+id_rsa_travis
+keys.tar
+
+gradle-*.*
+gradle-*.*-bin.zip
 
 # Spark
 persist/
