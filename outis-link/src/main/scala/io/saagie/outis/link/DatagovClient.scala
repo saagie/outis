@@ -1,7 +1,6 @@
 package io.saagie.outis.link
 
 import io.saagie.outis.core.SparkProgram
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
 /**

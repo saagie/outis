@@ -15,7 +15,7 @@ import org.apache.spark.util.LongAccumulator
 import scala.reflect.api.JavaUniverse
 import scala.util.{Failure, Success, Try}
 
-case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf = OutisConf())(implicit spark: SparkSession) {
+case class AnonymizationJob(dataset: DataSet, outisConf: OutisConf)(implicit spark: SparkSession) {
 
   def logger: Logger = Logger.getRootLogger
 

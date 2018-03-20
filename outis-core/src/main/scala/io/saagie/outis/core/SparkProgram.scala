@@ -1,6 +1,6 @@
 package io.saagie.outis.core
 
-import io.saagie.outis.core.job.AnonymizationJob
+import io.saagie.outis.core.job.{AnonymizationJob, OutisConf}
 import io.saagie.outis.core.model.OutisLink
 import org.apache.log4j.Logger
 import org.apache.spark.sql.SparkSession
@@ -11,11 +11,11 @@ case class SparkProgram(outisLink: OutisLink)(implicit sparkSession: SparkSessio
   /**
     * Start anonymization.
     */
-  def launchAnonymisation(): Unit = {
+  def launchAnonymisation(outisConf: OutisConf = OutisConf()): Unit = {
     outisLink.datasetsToAnonimyze() match {
       case Right(datasets) =>
         datasets.foreach(dataset => {
-          val result = AnonymizationJob(dataset).anonymize()
+          val result = AnonymizationJob(dataset, outisConf).anonymize()
           result match {
             case Right(anonymizationResult) =>
               val notification = outisLink.notifyDatasetProcessed(anonymizationResult)
