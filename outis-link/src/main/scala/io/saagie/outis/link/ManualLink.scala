@@ -24,9 +24,9 @@ case class ManualLink() extends OutisLink {
         Column("long_value", "long"),
         Column("float_value", "float"),
         Column("double_value", "double"),
-//        Column("decimal_value", "decimal"),
+        Column("decimal_value", "decimal"),
         Column("timestamp_value", "timestamp"),
-//        Column("date_value", "date"),
+        Column("date_value", "date"),
         Column("date_string_value", "date", Some("yyyy-MM-dd"))),
       FormatType.PARQUET,
       "anonymization.test_table",
@@ -43,7 +43,7 @@ case class ManualLink() extends OutisLink {
         FormatType.TEXTFILE,
         "anonymization.test_time",
         "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
-        Column("date", "date", Some("yyyy-MM-dd HH:mm:ss.SSS"), Some(-1)),
+        Column("date", "date", Some("yyyy-MM-dd HH:mm:ss.SSS"), Some(200)),
         "\u0001",
         "\u0001"
       )))

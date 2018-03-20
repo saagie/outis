@@ -14,6 +14,33 @@ Project is split into two parts: outis-core and outis-link
 * #### Outis Core
 Outis core is where the anonymization logic is built.
 
+##### Supported formats
+For now, only the following formats are supported:
+* Hive
+    * Parquet
+    * TextFile
+
+##### Anonymization methods
+Outis core provides multiple anonymization methods. For each type, you can select the method to apply.
+* String:
+    * suppression: set the column to None
+    * setTo: Relpace each characters of the string by another one.
+    * setToBlank: Replace all characters to space.
+    * setToX: Replace all characters to 'X'.
+    * truncate: Truncate the string to n-characters.
+    * substitute: Remplace digits with a random digit and letters with a random letter.
+
+* Numeric:
+    * substituteValue: Replace value with another random one. The new value will respect numeric range.
+
+* AnonymizeDate:
+Only three date types are supported:
+    * Date: will replace with a new date.
+    * Timestamp: will be replaced with a new timestamp
+    * String: A random date with the same format is generated.
+
+All generated dates are in between 01/01/1920 00:00:00 and the current date of execution.
+
 * #### Outis Link
 Outis link will be entry point of the anonymization job.
 You can configure the client from this application.
