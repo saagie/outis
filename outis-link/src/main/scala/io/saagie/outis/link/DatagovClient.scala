@@ -11,7 +11,12 @@ import org.apache.spark.sql.SparkSession
   * @param hdfsUser     The hdfs user which will be used by the application to read files.
   * @param thriftServer Hive's metastore thrift server url.
   */
-case class Parameters(datagovUrl: String = "", notification: String = "", hdfsUser: String = "", thriftServer: String = "")
+case class Parameters(datagovUrl: String = "",
+                      notification: String = "",
+                      hdfsUser: String = "",
+                      thriftServer: String = "",
+                      apiUser: String = "",
+                      apiPassword: String = "")
 
 /**
   * Example.
@@ -37,6 +42,14 @@ object DatagovClient extends App {
     opt[String]('t', "<thrift server>") required() action ((s, p) => {
       p.copy(thriftServer = s)
     }) text "Hive's metastore thrift server url."
+
+    opt[String]('d', "<datagov user>") required() action ((s, p) => {
+      p.copy(apiUser = s)
+    }) text "Saagie platform user for API authentification"
+
+    opt[String]('p', "<datagov password>") required() action ((s, p) => {
+      p.copy(apiPassword = s)
+    }) text "Saagie platform password for API authentification"
   }
 
   /**
@@ -45,7 +58,11 @@ object DatagovClient extends App {
     * @param config The datagov, hdfs user and thrift server configuration.
     */
   private def startAnonymization(config: Parameters): Unit = {
-    val link = DatagovLink(config.datagovUrl, config.notification)
+    val link = DatagovLink(DatagovConfiguration(
+      config.datagovUrl,
+      config.notification,
+      config.apiUser,
+      config.apiPassword))
     System.setProperty("HADOOP_USER_NAME", config.hdfsUser)
     System.setProperty("hive.metastore.uris", config.thriftServer)
     implicit val sparkSession: SparkSession = SparkSession

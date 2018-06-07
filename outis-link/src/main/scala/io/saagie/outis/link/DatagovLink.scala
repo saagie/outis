@@ -58,6 +58,16 @@ case class DatagovDataset(id: String,
   */
 case class DatagovNotification(datasetId: String, timestamp: Long, rowsAnonymized: Long, duration: Long = 0, rowsInError: Long = 0)
 
+/**
+  * Datagov's parameters. User and password are mandatory for unified API usage.
+  *
+  * @param url
+  * @param notificationUrl
+  * @param user
+  * @param password
+  */
+case class DatagovConfiguration(url: String, notificationUrl: String, user: String, password: String)
+
 object DatagovNotification {
   def apply(anonymizationResult: AnonymizationResult): DatagovNotification = new DatagovNotification(
     anonymizationResult.dataset.identifier.asInstanceOf[String],
@@ -67,9 +77,19 @@ object DatagovNotification {
     anonymizationResult.rowsInError)
 }
 
-case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) extends OutisLink {
+case class DatagovLink(configuration: DatagovConfiguration) extends OutisLink {
   val log: Logger = Logger.getRootLogger
-  val okHttpClient: OkHttpClient = new OkHttpClient.Builder().build()
+  val builder = new OkHttpClient.Builder()
+
+  builder.authenticator((route: Route, response: Response) => {
+    response
+      .request()
+      .newBuilder()
+      .header("Authorization", Credentials.basic(configuration.user, configuration.password))
+      .build()
+  })
+
+  val okHttpClient: OkHttpClient = builder.build()
 
   import DatagovLink.JSON_MEDIA_TYPE
 
@@ -78,7 +98,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
     */
   override def datasetsToAnonimyze(): Either[OutisLinkException, List[DataSet]] = {
     val request = new Request.Builder()
-      .url(datagovUrl)
+      .url(configuration.url)
       .get()
       .build()
 
@@ -148,7 +168,7 @@ case class DatagovLink(datagovUrl: String, datagovNotificationUrl: String) exten
     log.info(s"Body: $content")
 
     val request = new Request.Builder()
-      .url(datagovNotificationUrl)
+      .url(configuration.notificationUrl)
       .put(body)
       .build()
 
