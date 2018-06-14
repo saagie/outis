@@ -4,7 +4,7 @@ import io.saagie.outis.core.job.AnonymizationResult
 import io.saagie.outis.core.model._
 import org.json4s.NoTypeHints
 import org.json4s.native.Serialization
-import org.json4s.native.Serialization.{read, write}
+import org.json4s.native.Serialization.write
 
 case class ManualLink() extends OutisLink {
   /**

@@ -79,15 +79,21 @@ object DatagovNotification {
 
 case class DatagovLink(configuration: DatagovConfiguration) extends OutisLink {
   val log: Logger = Logger.getRootLogger
-  val builder = new OkHttpClient.Builder()
-
-  builder.authenticator((route: Route, response: Response) => {
-    response
-      .request()
-      .newBuilder()
-      .header("Authorization", Credentials.basic(configuration.user, configuration.password))
-      .build()
-  })
+  val builder: OkHttpClient.Builder = {
+    val b = new OkHttpClient.Builder()
+    if (configuration.user.nonEmpty && configuration.password.nonEmpty) {
+      b.authenticator(new Authenticator {
+        override def authenticate(route: Route, response: Response): Request = {
+          response
+            .request()
+            .newBuilder()
+            .header("Authorization", Credentials.basic(configuration.user, configuration.password))
+            .build()
+        }
+      })
+    }
+    b
+  }
 
   val okHttpClient: OkHttpClient = builder.build()
 

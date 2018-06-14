@@ -43,11 +43,11 @@ object DatagovClient extends App {
       p.copy(thriftServer = s)
     }) text "Hive's metastore thrift server url."
 
-    opt[String]('d', "<datagov user>") required() action ((s, p) => {
+    opt[String]('d', "<datagov user>") action ((s, p) => {
       p.copy(apiUser = s)
     }) text "Saagie platform user for API authentification"
 
-    opt[String]('p', "<datagov password>") required() action ((s, p) => {
+    opt[String]('p', "<datagov password>") action ((s, p) => {
       p.copy(apiPassword = s)
     }) text "Saagie platform password for API authentification"
   }
